@@ -8,12 +8,16 @@ import (
 )
 
 var outfile = flag.String("o", "", "output filename")
+var dump = flag.Bool("d", false, "dump human readable version")
+var pkg = flag.String("p", "main", "package to emit generated code into")
+
+
 func main() {
 	flag.Parse()
 	if flag.NArg()==0 {
-		log.Fatalf("usage svd2go -o <outputfile> <input filename>")
+		log.Fatalf("usage svd2go -d -p <pkg> -o <outputfile> <input filename>")
 	}
-	fp, err:=os.Open(os.Args[1])
+	fp, err:=os.Open(flag.Arg(0))
 	if err!=nil {
 		log.Fatal(err)
 	}
@@ -22,10 +26,17 @@ func main() {
 	if *outfile!="" {
 		o, err:=os.Create(*outfile)
 		if err!=nil {
+			log.Printf("out is %+v",*outfile)
 			log.Fatal(err)
 		}
 		out=o
 	}
-	svd.ProcessSVD(fp,out)
+	defer out.Close()
+	opts:=&svd.UserOptions{
+		Out:out,
+		Dump: *dump,
+		Pkg: *pkg,
+	}
+	svd.ProcessSVD(fp,opts)
 
 }

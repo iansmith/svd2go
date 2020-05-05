@@ -35,8 +35,15 @@ func (m *MultiformatInt) UnmarshalXML(d *xml.Decoder, start xml.StartElement) er
 		m.v = v
 		return nil
 	}
-	if strings.HasPrefix(s,"#") {
-		v, err:=strconv.ParseInt(s[1:],2,64)
+	if strings.HasPrefix(s,"#") || strings.HasPrefix(s,"0b"){
+		lenPrefix:=1
+		if strings.HasPrefix(s,"0b") {
+			lenPrefix=2
+		}
+		if lenPrefix==len(s){
+			return &SVDDecodeError{"empty value given for boolean:"+s}
+		}
+		v, err:=strconv.ParseInt(s[lenPrefix:],2,64)
 		//fmt.Printf("*** # %s => %s\n",s,fmt.Sprint(v))
 		if err!=nil {
 			return &SVDDecodeError{s}
@@ -66,11 +73,11 @@ func (b *Boolean) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	if err := d.DecodeElement(&s, &start); err != nil {
 		return err
 	}
-	if strings.ToLower(s)=="true" {
+	if strings.ToLower(s)=="true" || s=="1" {
 		b.v = true
 		return nil
 	}
-	if strings.ToLower(s)=="false" {
+	if strings.ToLower(s)=="false" || s=="0" {
 		b.v = false
 		return nil
 	}
@@ -80,10 +87,15 @@ func (b *Boolean) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 type Access struct {
 	read bool
 	write bool
+	isSet bool //did they explictly set the field
 }
 func (a Access) Get() (bool, bool){
 	return a.read, a.write
 }
+func (a Access) IsSet() (bool) {
+	return a.isSet
+}
+
 func (a Access) String() string {
 	result:="read-only"
 	if a.read && a.write{
@@ -99,6 +111,7 @@ func (b *Access) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	if err := d.DecodeElement(&s, &start); err != nil {
 		return err
 	}
+	b.isSet=true
 	if strings.ToLower(s)=="read-write" {
 		b.read=true
 		b.write=true
@@ -116,11 +129,14 @@ func (b *Access) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 }
 
 type BitRange struct {
-	lsb int
-	msb int
+	Lsb int
+	Msb int
 }
 func (b *BitRange) String() string{
-	return fmt.Sprintf("[%d:%d]",b.msb,b.lsb)
+	return fmt.Sprintf("[%d:%d]",b.Msb,b.Lsb)
+}
+func (b *BitRange) Width() int{
+	return (b.Msb-b.Lsb)+1
 }
 
 func (b *BitRange) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
@@ -147,8 +163,8 @@ func (b *BitRange) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			lsb=int(second)
 			msb=int(first)
 		}
-		b.lsb=lsb
-		b.msb=msb
+		b.Lsb=lsb
+		b.Msb=msb
 		return nil
 	}
 	return &SVDDecodeError{s}
