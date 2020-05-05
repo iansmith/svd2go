@@ -64,7 +64,7 @@ SOFTWARE.
         <headerStructName>Aux</headerStructName>
         <registers>
             <register>
-                <name>AuxIRQ</name>
+                <name>IRQ</name>
                 <description>The AUXIRQ register is used to check any pending interrupts which may be
                 asserted by the three Auxiliary sub blocks.</description>
                 <addressOffset>0</addressOffset>
@@ -171,7 +171,8 @@ SOFTWARE.
                             If this bit is clear no receive interrupts are generated.
                         </description>
                         <bitRange>[1:1]</bitRange>
-                        <access>read-only</access>
+                        <!-- is the doc on page 12 of the BCM2835 peripherals file wrong? -->
+                        <access>read-write</access>
                         <resetValue>0</resetValue>
                     </field>
                     <field>
@@ -236,7 +237,7 @@ SOFTWARE.
                             On write, writing with bit 1 set will clear the receive FIFO Writing with bit 2 set will clear the transmit FIFO
                         </description>
                         <bitRange>[2:1]</bitRange>
-                        <access>read-only</access>
+                        <access>write-only</access>
                         <resetValue>0b00</resetValue>
                         <enumeratedValues>
                             <name></name>
@@ -258,6 +259,7 @@ SOFTWARE.
                     <field>
                         <name>InterruptPending</name>
                         <description>This bit is clear whenever an interrupt is pending</description>
+                         <bitRange>[0:0]</bitRange>
                         <access>read-only</access>
                         <resetValue>0b1</resetValue>
                     </field>
@@ -411,7 +413,7 @@ SOFTWARE.
                 </fields>
             </register>
             <register>
-                <name>MiniUARTControl</name>
+                <name>MiniUARTExtra</name>
                 <description>
                     The AUX_MU_CNTL_REG provides access to some extra useful and nice features not found on a normal 16550 UART .
                 </description>

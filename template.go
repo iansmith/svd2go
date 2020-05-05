@@ -3,6 +3,7 @@ package svd
 var preambleTemplateText = `
 {{if ne .Tags ""}}
 // +build {{.Tags}}
+xxxblankxxx
 //
 {{end}}
 //
@@ -14,6 +15,7 @@ var preambleTemplateText = `
 //
 
 package {{.Package}} 
+import "runtime/volatile"
 
 {{/* Emit the type of each register */}}
 {{range .Peripheral}}
@@ -46,12 +48,12 @@ var bitFieldDeclTemplateText = `
 {{if .CanRead}}
 {{if eq .BitRange.Width 1}}
 func (a *{{printf "%sDef" .RegName}}) {{printf "%sIsSet" .Name}}() bool {
-	b:=BitField{ msb:{{ .BitRange.Msb}}, lsb:{{ .BitRange.Lsb}},reg:a}
-	return b.HasBit()
+	b:=volatile.BitField{ Msb:{{ .BitRange.Msb}}, Lsb:{{ .BitRange.Lsb}}, Reg:(*volatile.Register32)(a)}
+	return b.HasBits()
 }
 {{else}}
 func (a *{{printf "%sDef" .RegName}}) {{.Name}} () uint32 {
-	b:=BitField{ msb:{{ .BitRange.Msb}}, lsb:{{ .BitRange.Lsb }} ,reg:a}
+	b:=volatile.BitField{ Msb:{{ .BitRange.Msb}}, Lsb:{{ .BitRange.Lsb }} ,Reg:(*volatile.Register32)(a)}
 	return b.Get()
 }
 {{end}} {{/*end of the bit width is 1*/}}
@@ -60,29 +62,29 @@ func (a *{{printf "%sDef" .RegName}}) {{.Name}} () uint32 {
 {{if .CanWrite}}
 {{if eq .BitRange.Width 1}} 
 func (a *{{printf "%sDef" .RegName}}) {{printf "%sSet" .Name}}() {
-	b:=BitField{ msb:{{ .BitRange.Msb}}, lsb:{{ .BitRange.Lsb}},a}
+	b:=volatile.BitField{ Msb:{{ .BitRange.Msb}}, Lsb:{{ .BitRange.Lsb}},Reg:(*volatile.Register32)(a)}
 	b.Set()
 }
 func (a *{{printf "%sDef" .RegName}}) {{printf "%sClear" .Name}}() {
-	b:=BitField{ msb:{{ .BitRange.Msb}}, lsb:{{ .BitRange.Lsb}},a}
+	b:=volatile.BitField{ Msb:{{ .BitRange.Msb}}, Lsb:{{ .BitRange.Lsb}},Reg: (*volatile.Register32)(a)}
 	b.Clear()
 }
 {{else}}
 func (a *{{printf "%sDef" .RegName}}) {{printf "Set%s" .Name}}(v uint32) {
-	b:=BitField{ msb:{{ .BitRange.Msb}}, lsb:{{ .BitRange.Lsb}},a}
-	b.Set(v)
+	b:=volatile.BitField{ Msb:{{ .BitRange.Msb}}, Lsb:{{ .BitRange.Lsb}}, Reg:(*volatile.Register32)(a)}
+	b.SetBits(v)
 }
 {{end}} {{/*closes if */}}
 
 {{range .EnumeratedValue}}
 {{if .Field.CanRead}}
 func (a *{{printf "%sDef" .Field.RegName}}) {{.Name}}() bool {
-	return a.Get()=={{ .Value.Get }}
+	return (*volatile.Register32)(a).Get()=={{ .Value.Get }}
 }
 {{end}} {{/* closes if */}}
 {{if .Field.CanWrite}}
-func (a *{{printf "%sDef" .Field.RegName }}) {{ printf "Set%s" .Name }}() bool {
-	return a.Set({{ .Value.Get }})
+func (a *{{printf "%sDef" .Field.RegName }}) {{ printf "Set%s" .Name }}()  {
+	 (*volatile.Register32)(a).Set({{ .Value.Get }})
 }
 {{end}} {{/* closes if */}}
 {{end}} {{/*closes enumerated values*/}}
