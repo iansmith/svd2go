@@ -63,6 +63,7 @@ func ProcessSVD(reader io.Reader, opts *UserOptions) {
 	makeObjectsExported(&device)
 	makeBitfieldDecl(&device)
 	device.Package=opts.Pkg
+	device.SourceFilename=opts.InputFilename
 
 	////////// EXECUTE TEMPLATES //////////////
 	if err:=preambleTemplate.Execute(opts.Out,device); err!=nil {

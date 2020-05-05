@@ -18,6 +18,8 @@ type DeviceDef struct {
 	ResetMask MultiformatInt `xml:"resetMask"`
 	Peripheral []*PeripheralDef `xml:"peripherals>peripheral"`
 	Package string // this comes from the user opts
+	SourceFilename string // this is the filename used to create all this
+	Tags string //this comes from the command line option
 }
 
 type CpuDef struct {

@@ -10,6 +10,7 @@ import (
 var outfile = flag.String("o", "", "output filename")
 var dump = flag.Bool("d", false, "dump human readable version")
 var pkg = flag.String("p", "main", "package to emit generated code into")
+var tags = flag.String("b", "", "build tags (copied verbatim to output)")
 
 
 func main() {
@@ -36,6 +37,7 @@ func main() {
 		Out:out,
 		Dump: *dump,
 		Pkg: *pkg,
+		InputFilename: flag.Arg(0),
 	}
 	svd.ProcessSVD(fp,opts)
 

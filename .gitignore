@@ -1,3 +1,5 @@
 .idea
 enable-svd
 example
+rpi3.svd.go
+rpi3_qemu.svd.go
