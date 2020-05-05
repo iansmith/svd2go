@@ -38,6 +38,7 @@ func main() {
 		Dump: *dump,
 		Pkg: *pkg,
 		InputFilename: flag.Arg(0),
+		Tags: *tags,
 	}
 	svd.ProcessSVD(fp,opts)
 

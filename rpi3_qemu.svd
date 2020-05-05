@@ -94,7 +94,7 @@ SOFTWARE.
                 </fields>
             </register>
             <register>
-                <name>AuxEnable</name>
+                <name>Enable</name>
                 <description>The AUXENB register is used to enable the three modules; UART, SPI1, SPI2.</description>
                 <addressOffset>0x4</addressOffset>
                 <size>3</size>
