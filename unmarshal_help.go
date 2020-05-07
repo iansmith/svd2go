@@ -16,9 +16,15 @@ func (s *SVDDecodeError) Error() string {
 
 type MultiformatInt struct {
 	v int64
+	isSet bool
 }
 func (m* MultiformatInt) Get() int64 {
 	return m.v
+}
+
+// IsSet is needed because one cannot distinguish 0 set from 0 unset.
+func (m* MultiformatInt) IsSet() bool {
+	return m.isSet
 }
 
 func (m *MultiformatInt) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
@@ -26,6 +32,7 @@ func (m *MultiformatInt) UnmarshalXML(d *xml.Decoder, start xml.StartElement) er
 	if err := d.DecodeElement(&s, &start); err != nil {
 		return err
 	}
+	m.isSet=true
 	if strings.HasPrefix(s,"0x") {
 		v, err:=strconv.ParseInt(s[2:],16,64)
 		//fmt.Printf("*** 0x %s => %s\n",s,fmt.Sprint(v))

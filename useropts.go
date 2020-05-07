@@ -8,4 +8,5 @@ type UserOptions struct {
 	Pkg           string
 	InputFilename string
 	Tags          string
+	Import 	string
 }

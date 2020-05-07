@@ -62,9 +62,12 @@ func ProcessSVD(reader io.Reader, opts *UserOptions) {
 	addReservedRegisters(&device)
 	makeObjectsExported(&device)
 	makeBitfieldDecl(&device)
+
+	//assign things we got from user
 	device.Package=opts.Pkg
 	device.Tags = opts.Tags
 	device.SourceFilename=opts.InputFilename
+	device.Import = opts.Import
 
 	////////// EXECUTE TEMPLATES //////////////
 	if err:=preambleTemplate.Execute(opts.Out,device); err!=nil {
@@ -72,7 +75,16 @@ func ProcessSVD(reader io.Reader, opts *UserOptions) {
 	}
 
 	for _, p := range device.Peripheral {
+		if !p.AddressBlock.Size.IsSet() {
+			log.Fatalf("peripheral %s's address block has no size", p.Name)
+		}
 		for _, r := range p.Register {
+			if !r.AddressOffset.IsSet() {
+				log.Fatalf("peripheral %s, register %s has no address offset", p.Name,r.Name)
+			}
+			if !r.Size.IsSet() {
+				log.Fatalf("peripheral %s, register %s has no size", p.Name,r.Name)
+			}
 			for _, f := range r.Field {
 				if err:=bitFieldDeclTemplate.Execute(opts.Out,f); err!=nil {
 					log.Fatal(err)
@@ -121,7 +133,7 @@ func makeBitfieldDecl(d *DeviceDef) {
 				regRead, regWrite = r.Access.Get()
 			}
 			for _, f := range r.Field {
-				f.RegName = r.Name
+				f.RegName = makeExported(r.Name)
 				if !f.Access.IsSet() {
 					f.CanRead=regRead
 					f.CanWrite=regWrite
@@ -140,16 +152,46 @@ func makeBitfieldDecl(d *DeviceDef) {
 // is respected on the peripheral.
 func makeObjectsExported(d *DeviceDef) {
 	for _, peripheral := range d.Peripheral {
+		peripheral.Name = strings.TrimSpace(peripheral.Name)
+		peripheral.TypeName = strings.TrimSpace(peripheral.TypeName)
+		if a,b:=strings.Index(peripheral.Name," "),strings.Index(peripheral.Name, " "); a!=-1 || b!=-1 {
+			which:="peripheral.Name"
+			value:=peripheral.Name
+			if b==-1 {
+				which = "peripheral.TypeName"
+				value = peripheral.TypeName
+			}
+			log.Fatalf("names in an SVD document must be valid identifiers in go:  %s: %s", which, value)
+		}
 		peripheral.TypeName = makeExported(peripheral.Name)+"Def"
 		if peripheral.HeaderStructName!="" {
 			peripheral.TypeName = makeExported(peripheral.HeaderStructName)
 		}
 		peripheral.Name = makeExported(peripheral.Name)
 		for _, r:=range peripheral.Register {
+			r.Name = strings.TrimSpace(r.Name)
+			if strings.Index(r.Name," ")!=-1 {
+				log.Fatalf("names in an SVD document must be valid go identifiers: register '%s'",r.Name)
+			}
 			if strings.HasPrefix(r.Name,"reserved") {
 				r.TypeName=""
 			} else {
 				r.TypeName = makeExported(r.Name)
+			}
+			log.Printf("xxxx register '%s','%s'",r.Name,r.TypeName)
+			for _, f:=range r.Field {
+				f.Name = strings.TrimSpace(f.Name)
+				if strings.Index(f.Name, " ")!=-1 {
+					log.Fatalf("names in an SVD document must be valid go identifiers: field '%s'",f.Name)
+				}
+				f.Name = makeExported(f.Name)
+				for _, e:=range f.EnumeratedValue {
+					e.Name = strings.TrimSpace(e.Name)
+					if strings.Index(e.Name, " ")!=-1 {
+						log.Fatalf("names in an SVD document must be valid go identifiers: enumerated value '%s'",e.Name)
+					}
+					e.Name=makeExported(e.Name)
+				}
 			}
 		}
 	}
@@ -181,8 +223,8 @@ func addReservedRegisters(d *DeviceDef) {
 					//add in a register to make up the numbers
 					reserved := RegisterDef{
 						Name: fmt.Sprintf("reserved%03d", reservedCount),
-						Size: MultiformatInt{32},
-						AddressOffset: MultiformatInt{int64(current)},
+						Size: MultiformatInt{v:32, isSet:true},
+						AddressOffset: MultiformatInt{v:int64(current), isSet:true},
 					}
 					regsOutput = append(regsOutput, &reserved)
 					reservedCount++

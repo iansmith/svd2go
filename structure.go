@@ -20,6 +20,7 @@ type DeviceDef struct {
 	Package string // this comes from the user opts
 	SourceFilename string // this is the filename used to create all this
 	Tags string //this comes from the command line option
+	Import string //this comes from command line option
 }
 
 type CpuDef struct {

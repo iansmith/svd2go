@@ -1,6 +1,3 @@
-module github.com/iansmith/vsd
+module github.com/iansmith/svd
 
 go 1.14
-
-require (
-)

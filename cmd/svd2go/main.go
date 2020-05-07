@@ -1,16 +1,17 @@
 package main
 
 import (
-	svd "github.com/iansmith/vsd"
+	"flag"
+	"github.com/iansmith/svd"
 	"log"
 	"os"
-	"flag"
 )
 
 var outfile = flag.String("o", "", "output filename")
 var dump = flag.Bool("d", false, "dump human readable version")
 var pkg = flag.String("p", "main", "package to emit generated code into")
 var tags = flag.String("b", "", "build tags (copied verbatim to output)")
+var imp = flag.String("i", "runtime/volatile", "package name that has volatile.Register")
 
 
 func main() {
@@ -39,6 +40,7 @@ func main() {
 		Pkg: *pkg,
 		InputFilename: flag.Arg(0),
 		Tags: *tags,
+		Import: *imp,
 	}
 	svd.ProcessSVD(fp,opts)
 

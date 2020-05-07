@@ -15,27 +15,24 @@ xxxblankxxx
 //
 
 package {{.Package}} 
-import "runtime/volatile"
-
+import "{{.Import}}"
 {{/* Emit the type of each register */}}
 {{range .Peripheral}}
 {{range .Register}}
 {{if ne .TypeName ""}}
-type {{printf "%sDef" .Name}} volatile.Register32
+type {{printf "%sDef" .TypeName}} volatile.Register32
 {{end}} {{/*closes if*/}}
 {{end}} {{/*closes registers*/}}
 {{end}} {{/*closes peripherals*/}}
 `
 
 var deviceTemplateText = `
-
-
 {{/* Emit the struct for each peripheral */}}
 {{range .Peripheral}}
 type {{printf "%sDef" .TypeName}} struct {
 	{{- range .Register}}
 		{{if ne .TypeName ""}} 
-		{{.Name}} {{printf "%sDef" .Name}}   // 0x{{printf "%x" .AddressOffset.Get }}
+		{{.Name}} {{printf "%sDef" .TypeName}}   // 0x{{printf "%x" .AddressOffset.Get }}
 		{{else}}
 		{{.Name}} volatile.Register32   // 0x{{printf "%x" .AddressOffset.Get }}
 		{{end}} {{/*closes if*/}}
@@ -48,12 +45,12 @@ var bitFieldDeclTemplateText = `
 {{if .CanRead}}
 {{if eq .BitRange.Width 1}}
 func (a *{{printf "%sDef" .RegName}}) {{printf "%sIsSet" .Name}}() bool {
-	b:=volatile.BitField{ Msb:{{ .BitRange.Msb}}, Lsb:{{ .BitRange.Lsb}}, Reg:(*volatile.Register32)(a)}
+	b:=volatile.BitField{ Msb:{{ .BitRange.Msb}}, Lsb:{{ .BitRange.Lsb}}, Ptr:(*volatile.Register32)(a)}
 	return b.HasBits()
 }
 {{else}}
 func (a *{{printf "%sDef" .RegName}}) {{.Name}} () uint32 {
-	b:=volatile.BitField{ Msb:{{ .BitRange.Msb}}, Lsb:{{ .BitRange.Lsb }} ,Reg:(*volatile.Register32)(a)}
+	b:=volatile.BitField{ Msb:{{ .BitRange.Msb}}, Lsb:{{ .BitRange.Lsb }} ,Ptr:(*volatile.Register32)(a)}
 	return b.Get()
 }
 {{end}} {{/*end of the bit width is 1*/}}
@@ -62,16 +59,16 @@ func (a *{{printf "%sDef" .RegName}}) {{.Name}} () uint32 {
 {{if .CanWrite}}
 {{if eq .BitRange.Width 1}} 
 func (a *{{printf "%sDef" .RegName}}) {{printf "%sSet" .Name}}() {
-	b:=volatile.BitField{ Msb:{{ .BitRange.Msb}}, Lsb:{{ .BitRange.Lsb}},Reg:(*volatile.Register32)(a)}
+	b:=volatile.BitField{ Msb:{{ .BitRange.Msb}}, Lsb:{{ .BitRange.Lsb}},Ptr:(*volatile.Register32)(a)}
 	b.Set()
 }
 func (a *{{printf "%sDef" .RegName}}) {{printf "%sClear" .Name}}() {
-	b:=volatile.BitField{ Msb:{{ .BitRange.Msb}}, Lsb:{{ .BitRange.Lsb}},Reg: (*volatile.Register32)(a)}
+	b:=volatile.BitField{ Msb:{{ .BitRange.Msb}}, Lsb:{{ .BitRange.Lsb}},Ptr: (*volatile.Register32)(a)}
 	b.Clear()
 }
 {{else}}
 func (a *{{printf "%sDef" .RegName}}) {{printf "Set%s" .Name}}(v uint32) {
-	b:=volatile.BitField{ Msb:{{ .BitRange.Msb}}, Lsb:{{ .BitRange.Lsb}}, Reg:(*volatile.Register32)(a)}
+	b:=volatile.BitField{ Msb:{{ .BitRange.Msb}}, Lsb:{{ .BitRange.Lsb}}, Ptr:(*volatile.Register32)(a)}
 	b.SetBits(v)
 }
 {{end}} {{/*closes if */}}
