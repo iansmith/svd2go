@@ -1,6 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Raspberry PI 3 B+ Emulation In Qemu, System View Description
+
+  Sources:
+  BCM2835 ARM Peripherals Datasheet
+  https://elinux.org/BCM2835_datasheet_errata
+
+  Notes:
+  This definition does not have the GPIO pins, because they don't exist on a
+  software emulator.
+
+  The '-M raspi3' of Qemu 4.2 does not include the timer peripheral match registers,
+  so they are not defined here.
+
+  This definition only includes the MiniUART portion of the Aux peripheral.
+
+  This definition does include the MiniUART because that device does exist on
+  the emulator, even though it is redundant with the semihosting support in
+  Qemu 4.2.  To use that device you have to add '-serial null -serial stdio'
+  to your Qemu command line because the default is to route UART1 to stdio,
+  not the MiniUART.
  -->
 
 <device schemaVersion="1.1" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="CMSIS-SVD.xsd" >
@@ -653,28 +672,36 @@ SOFTWARE.
         </registers>
     </peripheral>
     <peripheral>
-        <name>GeneralPurposeIO</name>
+        <name>Timers</name>
         <description>
-        54 Pin Block Of GPIO
+        A free running, 64 bit timer and 2 (neé 4) match registers.
         </description>
         <addressBlock>
-            <baseAddress>0x00200000</baseAddress>
-            <size>0xA0</size>
+            <baseAddress>0x3000</baseAddress>
+            <size>0x1C</size>
             <usage>registers</usage>
         </addressBlock>
-        <headerStructName>GPIO</headerStructName>
+        <headerStructName>Timers</headerStructName>
         <registers>
             <register>
-                <dim>8</dim>
-                <dimIncrement>4</dimIncrement>
-                <!--yes, these are in a weird order; we allow dimIndex to be used with arrays for generating index constants -->
-                <dimIndex>GPIOInput,GPIOOutput,GPIOAltFunc5,GPIOAltFunc4,GPIOAltFunc0,GPIOAltFunc1,GPIOAltFunc2,GPIOAltFunc3</dimIndex>
-                <name>FunctionSelect[%s]</name>
-                <description>The control the use of the various pins. See also GPIOSetup function.</description>
-                <addressOffset>0</addressOffset>
+                <name>ControlStatus</name>
+                <addressOffset>0x00</addressOffset>
+                <description>Timer Control and Status (Acknowledge Interrupts)</description>
                 <size>32</size>
             </register>
-        </registers>
+            <register>
+                <name>Lower32</name>
+                <addressOffset>0x04</addressOffset>
+                <description>Lower 32 bits of the 64 bit timer</description>
+                <size>32</size>
+            </register>
+            <register>
+                <name>Upper32</name>
+                <addressOffset>0x08</addressOffset>
+                <description>Upper 32 bits of the 64 bit timer</description>
+                <size>32</size>
+            </register>
+        </register>
     </peripheral>
   </peripherals>
 </device>
