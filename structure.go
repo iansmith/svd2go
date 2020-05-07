@@ -81,6 +81,9 @@ type RegisterDef struct {
 	ResetMask MultiformatInt `xml:"resetMask"`
 	Field []*FieldDef `xml:"fields>field"`
 	TypeName string //created when processing, for reserved regs this is ""
+	Dim MultiformatInt `xml:"dim"`
+	DimIncrement MultiformatInt `xml:"dimIncrement"`
+	DimIndex string `xml:"dimIndex"`
 }
 
 

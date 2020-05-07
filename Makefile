@@ -1,4 +1,4 @@
-all: test.svd.go #rpi3_qemu.svd.go rpi3.svd.go
+all: test.svd.go rpi3_qemu.svd.go rpi3.svd.go
 
 ## this assumes that go install puts things somewhere that your PATH will find it
 svd2go: structure.go svd.go template.go unmarshal_help.go useropts.go cmd/svd2go/*.go

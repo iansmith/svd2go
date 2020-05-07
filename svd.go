@@ -7,7 +7,34 @@ import (
 	"io"
 	"log"
 	"strings"
+	"unicode"
 )
+
+const arrayDesignator = "[%s]"
+type usedFields [32]bool
+
+func (u *usedFields) Use(n,m int) bool {
+	result:=true
+	for i:=m; i<=n; i++ {
+		if u[i]==true {
+			result=false
+		} else {
+			u[i]=true
+		}
+	}
+	return result
+}
+func (u *usedFields) Clear() {
+	for i:=0; i<32; i++ {
+		u[i]=false
+	}
+}
+
+type constantDef struct {
+	Name string
+	Value string
+}
+var constants = []*constantDef{}
 
 func ProcessSVD(reader io.Reader, opts *UserOptions) {
 	var device DeviceDef
@@ -50,6 +77,9 @@ func ProcessSVD(reader io.Reader, opts *UserOptions) {
 		}
 	}
 
+	//
+	// Create templates
+	//
 	deviceTemplate:=template.New("device")
 	deviceTemplate = template.Must(deviceTemplate.Parse(deviceTemplateText))
 
@@ -59,11 +89,19 @@ func ProcessSVD(reader io.Reader, opts *UserOptions) {
 	preambleTemplate:=template.New("preamble")
 	preambleTemplate = template.Must(preambleTemplate.Parse(preambleTemplateText))
 
+	constantTemplate:=template.New("constant")
+	constantTemplate = template.Must(constantTemplate.Parse(constantTemplateText))
+
+	//
+	// Process what we got in the SVD
+	//
 	addReservedRegisters(&device)
 	makeObjectsExported(&device)
 	makeBitfieldDecl(&device)
 
+	//
 	//assign things we got from user
+	//
 	device.Package=opts.Pkg
 	device.Tags = opts.Tags
 	device.SourceFilename=opts.InputFilename
@@ -94,6 +132,9 @@ func ProcessSVD(reader io.Reader, opts *UserOptions) {
 		}
 	}
 	if err:=deviceTemplate.Execute(opts.Out,device); err!=nil {
+		log.Fatal(err)
+	}
+	if err:=constantTemplate.Execute(opts.Out,constants); err!=nil {
 		log.Fatal(err)
 	}
 }
@@ -149,19 +190,23 @@ func makeBitfieldDecl(d *DeviceDef) {
 }
 
 // Make sure the objects named in the file are exported and that the HeaderStructName
-// is respected on the peripheral.
+// is respected on the peripheral.  Checks that all the names do not
+// have spaces in them (since that's not valid go).  Check that dimensioned
+// arrays have valid size and that the name of array registers is right.
 func makeObjectsExported(d *DeviceDef) {
 	for _, peripheral := range d.Peripheral {
 		peripheral.Name = strings.TrimSpace(peripheral.Name)
 		peripheral.TypeName = strings.TrimSpace(peripheral.TypeName)
-		if a,b:=strings.Index(peripheral.Name," "),strings.Index(peripheral.Name, " "); a!=-1 || b!=-1 {
-			which:="peripheral.Name"
-			value:=peripheral.Name
-			if b==-1 {
-				which = "peripheral.TypeName"
-				value = peripheral.TypeName
-			}
-			log.Fatalf("names in an SVD document must be valid identifiers in go:  %s: %s", which, value)
+		if !isValidGoIdentifier(peripheral.Name){
+			log.Fatalf("names in an SVD document must be valid identifiers in go:  peripheral '%s'",
+				peripheral.Name)
+		}
+		if peripheral.TypeName==""  {
+			peripheral.TypeName=peripheral.Name
+		}
+		if !isValidGoIdentifier(peripheral.TypeName){
+			log.Fatalf("names in an SVD document must be valid identifiers in go:  peripheral typeName '%s'",
+				peripheral.TypeName)
 		}
 		peripheral.TypeName = makeExported(peripheral.Name)+"Def"
 		if peripheral.HeaderStructName!="" {
@@ -170,25 +215,57 @@ func makeObjectsExported(d *DeviceDef) {
 		peripheral.Name = makeExported(peripheral.Name)
 		for _, r:=range peripheral.Register {
 			r.Name = strings.TrimSpace(r.Name)
-			if strings.Index(r.Name," ")!=-1 {
-				log.Fatalf("names in an SVD document must be valid go identifiers: register '%s'",r.Name)
+			if !isValidGoIdentifier(r.Name){
+				log.Fatalf("names in an SVD document must be valid identifiers in go:  register '%s'",
+					r.Name)
 			}
-			if strings.HasPrefix(r.Name,"reserved") {
+			if strings.HasPrefix(r.Name,"reserved") || strings.HasSuffix(r.Name,arrayDesignator){
 				r.TypeName=""
 			} else {
 				r.TypeName = makeExported(r.Name)
 			}
-			log.Printf("xxxx register '%s','%s'",r.Name,r.TypeName)
+			//
+			// Handle Dims for registers only
+			//
+			if r.Dim.IsSet() {
+				if r.Dim.Get()<1 {
+					log.Fatalf("size of dimensioned array must be at least 1 (register %s in peripheral %s)",
+						r.Name, peripheral.Name)
+				}
+				if r.DimIncrement.Get()!=4 {
+					failNotImplemented("we can only generate registers that are 32 bits or dimIncrement=4 (register %s in peripheral %s)",
+						r.Name, peripheral.Name)
+				}
+				if !strings.HasSuffix(r.Name,arrayDesignator) {
+					log.Fatalf("dimension given as %d but register is not declared as array with '[%%s]' (register %s in peripheral %s)",
+						r.Dim.Get(), r.Name, peripheral.Name)
+				} else {
+					if r.TypeName!="" {
+						log.Fatalf("cannot use typeName with a dimensioned array (register %s in peripheral %s)",
+							r.Name,peripheral.Name)
+					}
+					r.Name = strings.TrimSuffix(r.Name,arrayDesignator)
+					for n, v:= range strings.Split(r.DimIndex,",") {
+						c:=&constantDef{
+							Name:r.Name+strings.TrimSpace(v),
+							Value: fmt.Sprint(n),
+						}
+						constants=append(constants,c)
+					}
+				}
+			}
 			for _, f:=range r.Field {
 				f.Name = strings.TrimSpace(f.Name)
-				if strings.Index(f.Name, " ")!=-1 {
-					log.Fatalf("names in an SVD document must be valid go identifiers: field '%s'",f.Name)
+				if !isValidGoIdentifier(r.Name){
+					log.Fatalf("names in an SVD document must be valid identifiers in go:  field '%s'",
+						f.Name)
 				}
 				f.Name = makeExported(f.Name)
 				for _, e:=range f.EnumeratedValue {
 					e.Name = strings.TrimSpace(e.Name)
-					if strings.Index(e.Name, " ")!=-1 {
-						log.Fatalf("names in an SVD document must be valid go identifiers: enumerated value '%s'",e.Name)
+					if !isValidGoIdentifier(e.Name){
+						log.Fatalf("names in an SVD document must be valid identifiers in go:  enumerated value '%s'",
+							e.Name)
 					}
 					e.Name=makeExported(e.Name)
 				}
@@ -235,6 +312,44 @@ func addReservedRegisters(d *DeviceDef) {
 			regsOutput = append(regsOutput, register)
 			current+=4 //only 32 bit regs
 		}
+		n:=len(regsOutput)<<2 //4 bytes each
+		//fill ones _after_ last declared register
+		for i:=int64(n); i<peripheral.AddressBlock.Size.Get(); i+=4{
+			reserved := RegisterDef{
+				Name: fmt.Sprintf("reserved%03d", reservedCount),
+				Size: MultiformatInt{v:32, isSet:true},
+				AddressOffset: MultiformatInt{v:int64(i), isSet:true},
+			}
+			regsOutput = append(regsOutput, &reserved)
+			reservedCount++
+		}
 		peripheral.Register=regsOutput
 	}
+}
+
+func isValidGoIdentifier(s string) bool {
+	if s=="" {
+		return false
+	}
+	if strings.Index(s," ")!=-1 {
+		return false
+	}
+	r:=[]rune(s)
+	if unicode.IsDigit(r[0]){
+		return false
+	}
+	switch s {
+	case "_", "true","false","iota","nil":
+		return false
+	case "int", "int8", "int16", "int32", "int64", "uint",
+		"uint8", "uint16", "uint32", "uint64", "uintptr",
+		"float32", "float64", "complex128", "complex64",
+		"bool", "byte", "rune", "string", "error":
+		return false
+	case "make", "len", "cap", "new", "append", "copy", "close",
+			"delete", "complex", "real", "imag", "panic", "recover":
+		return false
+	}
+
+	return true
 }

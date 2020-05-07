@@ -57,8 +57,8 @@ SOFTWARE.
         controlled by the auxiliary enable register.
         </description>
         <addressBlock>
-            <baseAddress>0x7E215000</baseAddress>
-            <size>0xD4</size>
+            <baseAddress>0x215000</baseAddress>
+            <size>0x68</size>
             <usage>registers</usage>
         </addressBlock>
         <headerStructName>Aux</headerStructName>
@@ -649,6 +649,30 @@ SOFTWARE.
                         <resetValue>0b0</resetValue>
                     </field>
                 </fields>
+            </register>
+        </registers>
+    </peripheral>
+    <peripheral>
+        <name>GeneralPurposeIO</name>
+        <description>
+        54 Pin Block Of GPIO
+        </description>
+        <addressBlock>
+            <baseAddress>0x00200000</baseAddress>
+            <size>0xA0</size>
+            <usage>registers</usage>
+        </addressBlock>
+        <headerStructName>GPIO</headerStructName>
+        <registers>
+            <register>
+                <dim>8</dim>
+                <dimIncrement>4</dimIncrement>
+                <!--yes, these are in a weird order; we allow dimIndex to be used with arrays for generating index constants -->
+                <dimIndex>GPIOInput,GPIOOutput,GPIOAltFunc5,GPIOAltFunc4,GPIOAltFunc0,GPIOAltFunc1,GPIOAltFunc2,GPIOAltFunc3</dimIndex>
+                <name>FunctionSelect[%s]</name>
+                <description>The control the use of the various pins. See also GPIOSetup function.</description>
+                <addressOffset>0</addressOffset>
+                <size>32</size>
             </register>
         </registers>
     </peripheral>
