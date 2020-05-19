@@ -1,0 +1,35 @@
+<!--
+Qemu (as of 5.0.0) does not have the match registers, so they are not in this descriptor.
+-->
+<peripheral>
+    <name>Timers</name>
+    <description>
+    A free running, 64 bit timer.
+    </description>
+    <addressBlock>
+        <baseAddress>0x3000</baseAddress>
+        <size>0x1C</size>
+        <usage>registers</usage>
+    </addressBlock>
+    <headerStructName>Timers</headerStructName>
+    <registers>
+        <register>
+            <name>ControlStatus</name>
+            <addressOffset>0x00</addressOffset>
+            <description>Timer Control and Status</description>
+            <size>32</size>
+        </register>
+        <register>
+            <name>Lower32</name>
+            <addressOffset>0x04</addressOffset>
+            <description>Lower 32 bits of the 64 bit timer</description>
+            <size>32</size>
+        </register>
+        <register>
+            <name>Upper32</name>
+            <addressOffset>0x08</addressOffset>
+            <description>Upper 32 bits of the 64 bit timer</description>
+            <size>32</size>
+        </register>
+    </registers>
+</peripheral>

@@ -6,11 +6,6 @@
   BCM2835 ARM Peripherals Datasheet
   https://elinux.org/BCM2835_datasheet_errata
 
-  Notes:
-  This definition only includes the MiniUART portion of the Aux peripheral.
-
-  Although there are 4 timer match registers, only 1 and 3 are actually usable
-  because the GPU uses 0 and 2. We have only defined the usuable registers.
  -->
 
 <device schemaVersion="1.1" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="CMSIS-SVD.xsd" >
@@ -175,25 +170,26 @@ SOFTWARE.
                 <size>2</size>
                 <fields>
                     <field>
-                        <name>Receive</name>
-                        <description>
-                            If this bit is set the interrupt line is asserted whenever the receive FIFO holds at least 1 byte.
-                            If this bit is clear no receive interrupts are generated.
-                        </description>
-                        <bitRange>[1:1]</bitRange>
-                        <!-- is the doc on page 12 of the BCM2835 peripherals file wrong? -->
-                        <access>read-write</access>
-                        <resetValue>0</resetValue>
-                    </field>
-                    <field>
-                        <name>Transmit</name>
-                        <description>
-                            If this bit is set the interrupt line is asserted whenever the transmit FIFO is empty.
-                            If this bit is clear no transmit interrupts are generated.
-                        </description>
-                        <bitRange>[0:0]</bitRange>
-                        <access>read-only</access>
-                        <resetValue>0</resetValue>
+                        <name>Interrupts</name>
+                        <description>Enable or Disable Interrupts For Receive and Transmit</description>
+                        <bitRange>[3:0]</bitRange>
+                        <enumeratedValues>
+                            <enumeratedValue>
+                                <name>None</name>
+                                <value>0b0000</value>
+                                <description>Turn off Receive and Transmit interrupts</description>
+                            </enumeratedValue>
+                             <enumeratedValue>
+                                 <name>Receive</name>
+                                 <value>0b0101</value>
+                                 <description>Send interrupt when at least one symbol is available in receive FIFO</description>
+                             </enumeratedValue>
+                             <enumeratedValue>
+                                 <name>Transmit</name>
+                                 <value>0b1010</value>
+                                 <description>Send interrupt when the transmit FIFO is empty</description>
+                             </enumeratedValue>
+                        </enumeratedValues>
                     </field>
                 </fields>
             </register>
@@ -296,9 +292,11 @@ SOFTWARE.
                     <field>
                         <name>DataSize</name>
                         <description>
-                            If clear the UART works in 7-bit mode If set the UART works in 8-bit mode
+                            If clear the UART works in 7-bit mode If set the UART works in 8-bit mode.
+                            The documentation in the data sheet is actually wrong on this one, so
+                            I used the known to work values.
                         </description>
-                        <bitRange>[0:0]</bitRange>
+                        <bitRange>[1:0]</bitRange>
                         <access>read-write</access>
                         <resetValue>0b0</resetValue>
                         <enumeratedValues>
@@ -308,7 +306,7 @@ SOFTWARE.
                             </enumeratedValue>
                             <enumeratedValue>
                                 <name>EightBit</name>
-                                <value>0b1</value>
+                                <value>0b11</value>
                             </enumeratedValue>
                         </enumeratedValues>
                     </field>
@@ -663,210 +661,413 @@ SOFTWARE.
         </registers>
     </peripheral>
     <peripheral>
-        <name>GeneralPurposeIO</name>
+        <name>InterruptController</name>
         <description>
-        54 Pin Block Of GPIO
+        ARM Interrupt controller.
         </description>
         <addressBlock>
-            <baseAddress>0x00200000</baseAddress>
-            <size>0xA0</size>
+            <baseAddress>0xB200</baseAddress>
+            <size>0x28</size>
             <usage>registers</usage>
         </addressBlock>
-        <headerStructName>GPIO</headerStructName>
+        <headerStructName></headerStructName>
         <registers>
             <register>
-                <dim>8</dim>
-                <dimIncrement>4</dimIncrement>
-                <!--yes, these are in a weird order; we allow dimIndex to be used with arrays for generating index constants -->
-                <dimIndex>GPIOInput,GPIOOutput,GPIOAltFunc5,GPIOAltFunc4,GPIOAltFunc0,GPIOAltFunc1,GPIOAltFunc2,GPIOAltFunc3</dimIndex>
-                <name>FunctionSelect[%s]</name>
-                <description>The control the use of the various pins. See also GPIOSetup function.</description>
-                <addressOffset>0</addressOffset>
+                <name>BasicPending</name>
+                <addressOffset>0x00</addressOffset>
+                <description>Basic Interrupt Pending</description>
+                <size>32</size>
+                <fields>
+                    <field>
+                        <name>ARMTimer</name>
+                        <bitRange>[0:0]</bitRange>
+                    </field>
+                </fields>
+            </register>
+            <register>
+                <name>Pending1</name>
+                <addressOffset>0x04</addressOffset>
+                <description>Interrupt Group 1 Pending</description>
                 <size>32</size>
             </register>
             <register>
-                <name>OutputSet0</name>
+                <name>Pending2</name>
+                <addressOffset>0x08</addressOffset>
+                <description>Interrupt Group 2 Pending</description>
+                <size>32</size>
+            </register>
+            <register>
+                <name>FIQControl</name>
+                <addressOffset>0x0C</addressOffset>
+                <description>Controls "fast" interrupts</description>
+                <size>32</size>
+            </register>
+            <register>
+                <name>EnableIRQs1</name>
+                <addressOffset>0x10</addressOffset>
+                <description>Enable Group 1 Interrupts</description>
+                <size>32</size>
+                <fields>
+                    <field>
+                        <name>AuxInterrupt</name>
+                        <description>Auxillary Peripherals Interrupt</description>
+                        <access>read-write</access>
+                        <bitRange>[29:29]</bitRange>
+                        <resetValue>0b0</resetValue>
+                    </field>
+                </fields>
+            </register>
+            <register>
+                <name>EnableIRQs2</name>
+                <addressOffset>0x14</addressOffset>
+                <description>Enable Group 2 Interrupts</description>
+                <size>32</size>
+            </register>
+            <register>
+                <name>EnableBasic</name>
+                <addressOffset>0x18</addressOffset>
+                <description>Enable Basic Interrupts</description>
+                <size>32</size>
+                <fields>
+                    <field>
+                        <name>ARMTimer</name>
+                        <bitRange>[0:0]</bitRange>
+                    </field>
+                </fields>
+            </register>
+            <register>
+                <name>DisableIRQs1 </name>
                 <addressOffset>0x1C</addressOffset>
-                <description></description>
+                <description>Disable Group 1 Interrupts</description>
                 <size>32</size>
+                <fields>
+                    <field>
+                        <name>AuxInterrupt</name>
+                        <description>Auxillary Peripherals Interrupt</description>
+                        <access>read-write</access>
+                        <bitRange>[29:29]</bitRange>
+                        <resetValue>0b0</resetValue>
+                    </field>
+                </fields>
             </register>
             <register>
-                <name>OutputSet1</name>
+                <name>DisableIRQs2</name>
                 <addressOffset>0x20</addressOffset>
-                <description></description>
+                <description>Disable Group 2 Interrupts</description>
                 <size>32</size>
             </register>
             <register>
-                <name>OutputClear0</name>
-                <addressOffset>0x28</addressOffset>
+                <name>DisableBasic</name>
+                <addressOffset>0x24</addressOffset>
+                <description>Disable Basic Interrupts</description>
+                <size>32</size>
+                <fields>
+                    <field>
+                        <name>ARMTimer</name>
+                        <bitRange>[0:0]</bitRange>
+                    </field>
+                </fields>
+            </register>
+        </registers>
+    </peripheral>
+    <peripheral>
+        <name>Mailbox</name>
+        <description>
+        Videocore mailbox interface. inputs must be 16 byte aligned!
+        </description>
+        <addressBlock>
+            <baseAddress>0x0000B880</baseAddress>
+            <size>0x24</size>
+            <usage>registers</usage>
+        </addressBlock>
+        <registers>
+            <register>
+                <name>Read</name>
                 <description></description>
+                <addressOffset>0x0</addressOffset>
                 <size>32</size>
             </register>
             <register>
-                <name>OutputClear1</name>
-                <addressOffset>0x2C</addressOffset>
+                <name>Poll</name>
                 <description></description>
+                <addressOffset>0x10</addressOffset>
                 <size>32</size>
             </register>
             <register>
-                <name>Level0</name>
-                <addressOffset>0x34</addressOffset>
+                <name>Sender</name>
                 <description></description>
+                <addressOffset>0x14</addressOffset>
                 <size>32</size>
             </register>
             <register>
-                <name>Level1</name>
-                <addressOffset>0x38</addressOffset>
+                <name>Status</name>
                 <description></description>
+                <addressOffset>0x18</addressOffset>
+                <size>32</size>
+                <fields>
+                    <field>
+                        <name>Full</name>
+                        <description>Is the mailbox already full?</description>
+                        <access>read-only</access>
+                        <bitRange>[31:31]</bitRange>
+                        <resetValue>0</resetValue>
+                    </field>
+                    <field>
+                        <name>Empty</name>
+                        <description>Is the mailbox empty?</description>
+                        <access>read-only</access>
+                        <bitRange>[30:30]</bitRange>
+                        <resetValue>1</resetValue>
+                    </field>
+                </fields>
+            </register>
+            <register>
+                <name>Config</name>
+                <description></description>
+                <addressOffset>0x1C</addressOffset>
                 <size>32</size>
             </register>
             <register>
-                <name>EventDectectStatus0</name>
-                <addressOffset>0x40</addressOffset>
+                <name>Write</name>
                 <description></description>
-                <size>32</size>
-            </register>
-            <register>
-                <name>EventDectectStatus1</name>
-                <addressOffset>0x44</addressOffset>
-                <description></description>
-                <size>32</size>
-            </register>
-            <register>
-                <name>RisingEdgeDetectEnable0</name>
-                <addressOffset>0x4C</addressOffset>
-                <description></description>
-                <size>32</size>
-            </register>
-            <register>
-                <name>RisingEdgeDetectEnable1</name>
-                <addressOffset>0x50</addressOffset>
-                <description></description>
-                <size>32</size>
-            </register>
-            <register>
-                <name>FallingEdgeDetectEnable0</name>
-                <addressOffset>0x58</addressOffset>
-                <description></description>
-                <size>32</size>
-            </register>
-            <register>
-                <name>FallingEdgeDetectEnable1</name>
-                <addressOffset>0x5C</addressOffset>
-                <description></description>
-                <size>32</size>
-            </register>
-            <register>
-                <name>HighDetectEnable0</name>
-                <addressOffset>0x64</addressOffset>
-                <description></description>
-                <size>32</size>
-            </register>
-            <register>
-                <name>HighDetectEnable1</name>
-                <addressOffset>0x68</addressOffset>
-                <description></description>
-                <size>32</size>
-            </register>
-            <register>
-                <name>LowDetectEnable0</name>
-                <addressOffset>0x70</addressOffset>
-                <description></description>
-                <size>32</size>
-            </register>
-            <register>
-                <name>LowDetectEnable1</name>
-                <addressOffset>0x74</addressOffset>
-                <description></description>
-                <size>32</size>
-            </register>
-            <register>
-                <name>AsyncRisingEdgeDetect0</name>
-                <addressOffset>0x7C</addressOffset>
-                <description></description>
-                <size>32</size>
-            </register>
-            <register>
-                <name>AsyncRisingEdgeDetect1</name>
-                <addressOffset>0x80</addressOffset>
-                <description></description>
-                <size>32</size>
-            </register>
-            <register>
-                <name>AsyncFallingEdgeDetect0</name>
-                <addressOffset>0x88</addressOffset>
-                <description></description>
-                <size>32</size>
-            </register>
-            <register>
-                <name>AsyncFallingEdgeDetect1</name>
-                <addressOffset>0x8C</addressOffset>
-                <description></description>
-                <size>32</size>
-            </register>
-            <register>
-                <name>PullUpDownEnable</name>
-                <addressOffset>0x94</addressOffset>
-                <description></description>
-                <size>32</size>
-            </register>
-            <register>
-                <name>PullUpDownEnableClock0</name>
-                <addressOffset>0x98</addressOffset>
-                <description></description>
-                <size>32</size>
-            </register>
-            <register>
-                <name>PullUpDownEnableClock1</name>
-                <addressOffset>0x9C</addressOffset>
-                <description></description>
+                <addressOffset>0x20</addressOffset>
                 <size>32</size>
             </register>
         </registers>
     </peripheral>
     <peripheral>
-        <name>Timers</name>
+        <name>ArmTimer</name>
         <description>
-        A free running, 64 bit timer and 2 (neé 4) match registers.
+        This is the timer that is on the arm chip.  This is *not* the system
+        timer peripheral.  The arm-side timer is document in chapter 14 of the
+        BCM2835 manual, whereas the system timer is documented in chapter 12.
+        The qemu emulator does not have the match registers for the system timer.
+        The arm-side timer requires care to use on real hardware, as it is
+        tied to the system clock, whose speed can vary because of low-power
+        modes.  You need to either check the clock speed or configure it
+        in your config.txt to have a stable value.
+        This description has been updated to reflect the errors documented
+        in the errata on pages 197 and 198.
         </description>
         <addressBlock>
-            <baseAddress>0x3000</baseAddress>
-            <size>0x1C</size>
+            <baseAddress>0x000B400</baseAddress>
+            <size>0x24</size>
             <usage>registers</usage>
         </addressBlock>
-        <headerStructName>Timers</headerStructName>
         <registers>
             <register>
-                <name>ControlStatus</name>
-                <addressOffset>0x00</addressOffset>
-                <description>Timer Control and Status (Acknowledge Interrupts)</description>
+                <name>Load</name>
+                <description>
+                    Timer Load Register. The timer load register sets the time for the timer to count down.
+                    This value is loaded into the timer value register after the load register has been written or if the
+                    timer-value register has counted down to 0.
+                </description>
+                <access>read-write</access>
+                <addressOffset>0x0</addressOffset>
                 <size>32</size>
             </register>
             <register>
-                <name>Lower32</name>
-                <addressOffset>0x04</addressOffset>
-                <description>Lower 32 bits of the 64 bit timer</description>
+                <name>Value</name>
+                <description>
+                    Timer Value Register. This register holds the current timer value and is counted down when the
+                    counter is running. It is counted down each timer clock until the value 0 is reached.
+                    Then the value register is re-loaded from the timer load register and the interrupt pending bit is
+                    set. The timer count down speed is set by the timer pre-divide register.
+                </description>
+                <access>read-only</access>
+                <addressOffset>0x4</addressOffset>
                 <size>32</size>
             </register>
             <register>
-                <name>Upper32</name>
-                <addressOffset>0x08</addressOffset>
-                <description>Upper 32 bits of the 64 bit timer</description>
+                <name>Control</name>
+                <description>
+                    Timer Control Register. The standard SP804 timer control register consist of 8 bits but in the
+                    BCM implementation there are more control bits for the extra features. Control bits 0-7 are
+                    identical to the SP804 bits, albeit some functionality of the SP804 is not implemented.
+                    All new control bits start from bit 8 upwards.
+                </description>
+                <access>read-write</access>
+                <addressOffset>0x8</addressOffset>
+                <size>32</size>
+                <fields>
+                    <field>
+                        <name>PreScaler</name>
+                        <description>
+                        Free running counter pre-scaler. Freq is sys_clk/(prescale+1)
+                        </description>
+                        <bitRange>[23:16]</bitRange>
+                        <resetValue>0x3E</resetValue>
+                    </field>
+                    <field>
+                        <name>FreeRunningEnableDisable</name>
+                        <description>
+                        0 : Free running counter Disabled
+                        1 : Free running counter Enabled
+                        </description>
+                        <bitRange>[9:9]</bitRange>
+                    </field>
+                    <field>
+                        <name>HaltOnDebug</name>
+                        <description>
+                        0 : Timers keeps running if ARM is in debug halted mode
+                        1 : Timers halted if ARM is in debug halted mode
+                        </description>
+                        <bitRange>[8:8]</bitRange>
+                    </field>
+                    <field>
+                        <name>CounterEnableDisable</name>
+                        <description>
+                        0 : Timer disabled
+                        1 : Timer enabled
+                        </description>
+                        <bitRange>[7:7]</bitRange>
+                    </field>
+                    <field>
+                        <name>InterruptEnableDisable</name>
+                        <description>
+                        0 : Timer Interrupt disabled
+                        1 : Timer Interrupt enabled
+                        </description>
+                        <bitRange>[5:5]</bitRange>
+                    </field>
+                    <field>
+                        <name>Prescale</name>
+                        <description>
+                        00 : pre-scale is clock / 1 (No pre-scale)
+                        01 : pre-scale is clock / 16
+                        10 : pre-scale is clock / 256
+                        11 : pre-scale is clock / 1 (Undefined in 804)
+                        </description>
+                        <bitRange>[3:2]</bitRange>
+                        <enumeratedValues>
+                            <enumeratedValue>
+                                <name>NoPreScale</name>
+                                <value>0b00</value>
+                                <description>prescale is clock/1</description>
+                            </enumeratedValue>
+                            <enumeratedValue>
+                                <name>PreScale16</name>
+                                <value>0b01</value>
+                                <description>prescale is clock/16</description>
+                            </enumeratedValue>
+                            <enumeratedValue>
+                                <name>PreScale256</name>
+                                <value>0b10</value>
+                                <description>prescale is clock/256</description>
+                            </enumeratedValue>
+                        </enumeratedValues>
+                    </field>
+                    <field>
+                        <name>CounterSize</name>
+                        <description>
+                        0 : 16-bit counters
+                        1 : 32-bit counter
+                        </description>
+                        <bitRange>[1:1]</bitRange>
+                        <enumeratedValues>
+                            <enumeratedValue>
+                                <name>SixteenBit</name>
+                                <value>0b0</value>
+                            </enumeratedValue>
+                            <enumeratedValue>
+                                <name>ThirtyTwoBit</name>
+                                <value>0b1</value>
+                            </enumeratedValue>
+                        </enumeratedValues>
+                    </field>
+                </fields>
+            </register>
+            <register>
+                <name>IRQClear</name>
+                <description>
+                The timer IRQ clear register is write only. When writing this register the interrupt-pending bit is cleared.
+                When reading this register it returns 0x544D5241 which is the ASCII reversed value for "ARMT".
+                </description>
+                <access>write-only</access>
+                <addressOffset>0x0C</addressOffset>
                 <size>32</size>
             </register>
             <register>
-                <name>Match1</name>
+                <name>RawIRQStatus</name>
+                <description>
+                It shows the status of the interrupt pending bit.
+                </description>
+                <access>read-only</access>
                 <addressOffset>0x10</addressOffset>
-                <description>Timer Match Register 1</description>
+                <size>32</size>
+                <fields>
+                    <field>
+                    <name>Pending</name>
+                    <bitRange>[0:0]</bitRange>
+                    </field>
+                </fields>
+            </register>
+            <register>
+                <name>MaskedIRQStatus</name>
+                <description>
+                The masked IRQ register is a read-only register. It shows the status of the interrupt signal. It is
+                simply a logical AND of the interrupt pending bit and the interrupt enable bit.
+                </description>
+                <access>read-only</access>
+                <addressOffset>0x14</addressOffset>
+                <size>32</size>
+                <fields>
+                    <field>
+                    <name>Asserted</name>
+                    <bitRange>[0:0]</bitRange>
+                    </field>
+                </fields>
+            </register>
+            <register>
+                <name>Reload</name>
+                <description>
+                This register is a copy of the timer load register. The difference is that a write to this register
+                does not trigger an immediate reload of the timer value register. Instead the timer load register
+                value is only accessed if the value register has finished counting down to zero.
+                </description>
+                <access>read-write</access>
+                <addressOffset>0x18</addressOffset>
                 <size>32</size>
             </register>
             <register>
-                <name>Match3</name>
-                <addressOffset>0x18</addressOffset>
-                <description>Timer Match Register 3</description>
+                <name>PreDivide</name>
+                <description>
+                The Pre-divider register is not present in the SP804.  Compensates for the lack of a 1Mhz clock.
+                </description>
+                <access>read-write</access>
+                <addressOffset>0x1C</addressOffset>
+                <size>32</size>
+                <fields>
+                    <field>
+                        <name>Value</name>
+                        <description>
+                        The pre-divider register is 10 bits wide and can be written or read from. This register has
+                        been added as the SP804 expects a 1MHz clock which we do not have. Instead the pre-divider
+                        takes the APB clock and divides it down according to:
+                        timer_clock = apb_clock/(pre_divider+1)
+                        The reset value of this register is 0x7D so gives a divide by 126.
+                        </description>
+                        <bitRange>[9:0]</bitRange>
+                        <resetValue>0x7D</resetValue>
+                    </field>
+                </fields>
+            </register>
+            <register>
+                <name>Counter</name>
+                <description>
+                 The free running counter is not present in the SP804.
+                 The free running counter is a 32 bits wide read only register. The register is enabled by setting bit
+                 9 of the Timer control register. The free running counter is incremented immediately after it is
+                 enabled. The timer can not be reset but when enabled, will always increment and roll-over. The free
+                 running counter is also running from the APB clock and has its own clock pre-divider controlled by
+                 bits 16-23 of the timer control register.
+                 This register will be halted too if bit 8 of the control register is set and the ARM is in Debug Halt mode.
+                </description>
+                <access>read-only</access>
+                <addressOffset>0x20</addressOffset>
                 <size>32</size>
             </register>
-        </register>
+        </registers>
     </peripheral>
   </peripherals>
 </device>

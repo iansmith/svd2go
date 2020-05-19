@@ -1,0 +1,64 @@
+<!--
+  Raspberry PI 3 B+ On Qemu 5.0.0, Composite System View Description
+
+  Sources:
+  BCM2835 ARM Peripherals Datasheet
+  https://elinux.org/BCM2835_datasheet_errata
+  qemu 5.0.0 source code
+
+ -->
+<device schemaVersion="1.1" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="CMSIS-SVD.xsd" >
+  <vendor>Raspberry Pi Foundation</vendor>
+  <vendorID>RPI</vendorID>
+  <name>rpi3b+</name>
+  <series>raspberry pi</series>
+  <version>0.1</version>
+  <description>Single Board Computer With An ARM A-53 Quad Core CPU in a BCM2837 SOC</description>
+  <licenseText>
+MIT License
+
+Copyright (c) 2020 Ian Smith
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+  </licenseText>
+
+  <!--- how do we indicate that we have 4 cores? todo(iansmith) -->
+  <cpu>
+    <name>CA53</name> <!--arm's designation -->
+    <revision>r3p0</revision>  <!--arm's designation -->
+    <endian>little</endian>
+    <mpuPresent>true</mpuPresent>
+    <fpuPresent>true</fpuPresent>
+    <nvicPrioBits>0</nvicPrioBits>
+    <vendorSystickConfig>false</vendorSystickConfig> <!--???-->
+    <fpuDP>false</fpuDP> <!--???-->
+    <dspPresent>false</dspPresent>
+    <icachePresent>true</icachePresent>  <!-- is this true on a simulator???-->
+    <dcachePresent>true</dcachePresent>  <!-- is this true on a simulator???-->
+  </cpu>
+
+  <peripherals>
+    <includeComposites>
+        <includeComposite>bcm-2836.cprp</includeComposite>
+    </includeComposites>
+    <includes>
+        <include>quada7-control.prp
+    </includes>
+  <peripherals>
+</device>

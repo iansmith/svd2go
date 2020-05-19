@@ -1,0 +1,42 @@
+<!--
+We only describe the registers for the usable match registers (which are 2 and 4).
+We override the qemu version to get the 64 bit timer.
+-->
+<peripheral>
+    <override>bcm-2835-timers-qemu.prp</override>
+    <!--note: we do not put overrideWith here because we are explicitly giving the override -->
+    <registers>
+        <register>
+            <name>ControlStatus</name>
+            <addressOffset>0x00</addressOffset>
+            <description>Timer Control and Status (Acknowledge Interrupts)</description>
+            <size>32</size>
+            <fields>
+                <field>
+                    <name>Match1</name>
+                    <bitRange>[1:1]</bitRange>
+                    <description>Set to 1 to clear the interrupt from this match register</description>
+                    <resetValue>0b0</resetValue>
+                </field>
+                <field>
+                    <name>Match3</name>
+                    <bitRange>[3:3]</bitRange>
+                    <description>Set to 1 to clear the interrupt from this match register</description>
+                    <resetValue>0b0</resetValue>
+                </field>
+            </fields>
+        </register>
+        <register>
+            <name>Match1</name>
+            <addressOffset>0x10</addressOffset>
+            <description>Timer Match 1 Value</description>
+            <size>32</size>
+        </register>
+        <register>
+            <name>Match3</name>
+            <addressOffset>0x18</addressOffset>
+            <description>Timer Match Register 3</description>
+            <size>32</size>
+        </register>
+    </registers>
+</peripheral>

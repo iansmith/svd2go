@@ -5,10 +5,12 @@ import (
 	"github.com/iansmith/svd"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 var outfile = flag.String("o", "", "output filename")
-var dump = flag.Bool("d", false, "dump human readable version")
+var dump = flag.Bool("d", false, "dump human readable version (debugging use only")
 var pkg = flag.String("p", "main", "package to emit generated code into")
 var tags = flag.String("b", "", "build tags (copied verbatim to output)")
 var imp = flag.String("i", "runtime/volatile", "package name that has volatile.Register")
@@ -17,7 +19,7 @@ var imp = flag.String("i", "runtime/volatile", "package name that has volatile.R
 func main() {
 	flag.Parse()
 	if flag.NArg()==0 {
-		log.Fatalf("usage svd2go -d -p <pkg> -o <outputfile> <input filename>")
+		log.Fatalf("usage svd2go -d -p <pkg> -o <outputfile> <input filename, either .csvd or .svd>")
 	}
 	fp, err:=os.Open(flag.Arg(0))
 	if err!=nil {
@@ -42,6 +44,18 @@ func main() {
 		Tags: *tags,
 		Import: *imp,
 	}
-	svd.ProcessSVD(fp,opts)
+	if strings.HasSuffix(flag.Arg(0),".csvd") {
+		comp:=svd.ProcessCSVD(fp,opts)
+		for _, part:=range comp.PeripheralFiles {
+			fp, err:=os.Open(part)
+			if err!=nil {
+				log.Fatalf("unable to open %s (part of %s): %v", part, opts.InputFilename, err)
+			}
+			peripheral:=svd.ProcessPeripheral(fp,opts,part)
+			comp.Add(peripheral)
+		}
+	}
 
+	//it was _just_ an svd
+	svd.ProcessSVD(fp, opts, opts.InputFilename)
 }

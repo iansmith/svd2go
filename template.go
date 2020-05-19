@@ -16,12 +16,27 @@ xxxblankxxx
 
 package {{.Package}} 
 import "{{.Import}}"
+import "unsafe"
 {{/* Emit the type of each register */}}
 {{range .Peripheral}}
 {{range .Register}}
 {{if ne .TypeName ""}}
 type {{printf "%sDef" .TypeName}} volatile.Register32
-{{end}} {{/*closes if*/}}
+	{{if .Access.CanRead}}
+	func (a *{{printf "%sDef" .TypeName}}) Get() uint32 {
+		return (*volatile.Register32)(a).Get()
+	}
+	{{end}} {{/*end of can read test*/}}
+	{{if .Access.CanWrite}}
+	func (a *{{printf "%sDef" .TypeName}}) Set(u uint32) {
+		(*volatile.Register32)(a).Set(u)
+	}
+	func (a *{{printf "%sDef" .TypeName}}) SetBits(u uint32) {
+		(*volatile.Register32)(a).SetBits(u)
+	}
+	{{end}} {{/*end of can write test*/}}
+
+{{end}} {{/*closes if for empty typename*/}}
 {{end}} {{/*closes registers*/}}
 {{end}} {{/*closes peripherals*/}}
 `
@@ -42,7 +57,7 @@ type {{printf "%sDef" .TypeName}} struct {
 		{{end}} {{/*closes if*/}}
 	{{end}} {{/* closesregisters */}} 
 } {{/* closes struct of peripheral */}}
-var {{.TypeName}} *{{printf "%sDef" .TypeName}} = (*{{printf "%sDef" .TypeName}})(unsafe.Pointer(MemoryMappedIO + {{.BaseAddress.Get}}))
+var {{.TypeName}} *{{printf "%sDef" .TypeName}} = (*{{printf "%sDef" .TypeName}})(unsafe.Pointer(MemoryMappedIO + {{printf "0x%x" .AddressBlock.BaseAddress.Get}}))
 
 {{end}} {{/* end of peripherals */}}
 `
@@ -87,7 +102,7 @@ func (a *{{printf "%sDef" .Field.RegName}}) {{.Name}}() bool {
 {{end}} {{/* closes if */}}
 {{if .Field.CanWrite}}
 func (a *{{printf "%sDef" .Field.RegName }}) {{ printf "Set%s" .Name }}()  {
-	 (*volatile.Register32)(a).Set({{ .Value.Get }})
+	(*volatile.Register32)(a).SetBits({{ .Value.Get }} << {{.Field.BitRange.Lsb}})
 }
 {{end}} {{/* closes if */}}
 {{end}} {{/*closes enumerated values*/}}

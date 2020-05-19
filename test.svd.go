@@ -8,9 +8,19 @@
 package svd
 
 import "github.com/iansmith/svd/runtime/volatile"
+import "unsafe"
 
 type R1Def volatile.Register32
 
+func (a *R1Def) Get() uint32 {
+	return (*volatile.Register32)(a).Get()
+}
+func (a *R1Def) Set(u uint32) {
+	(*volatile.Register32)(a).Set(u)
+}
+func (a *R1Def) SetBits(u uint32) {
+	(*volatile.Register32)(a).SetBits(u)
+}
 func (a *R1Def) CastIsSet() bool {
 	b := volatile.BitField{Msb: 2, Lsb: 2, Ptr: (*volatile.Register32)(a)}
 	return b.HasBits()
@@ -31,4 +41,4 @@ type MypDef struct {
 	reserved006 volatile.Register32 // 0x1c
 }
 
-var Myp *MypDef = (*MypDef)(unsafe.Pointer(MemoryMappedIO + 0))
+var Myp *MypDef = (*MypDef)(unsafe.Pointer(MemoryMappedIO + 0xdeadbeef))

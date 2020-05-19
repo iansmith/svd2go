@@ -1,0 +1,9 @@
+<!--
+We don't actually change anything from the bcm-2835.
+Doc doesn't seem to be available for the 2836, so even if you wanted to...
+-->
+<peripherals>
+    <includeComposites>
+        <includeComposite>bcm-2385.cprp</includeComposite>
+    </includeComposites>
+</peripherals>

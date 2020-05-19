@@ -99,6 +99,18 @@ type Access struct {
 func (a Access) Get() (bool, bool){
 	return a.read, a.write
 }
+func (a Access) CanRead() bool {
+	if !a.isSet {
+		return true
+	}
+	return a.read
+}
+func (a Access) CanWrite() bool {
+	if !a.isSet {
+		return true
+	}
+	return a.write
+}
 func (a Access) IsSet() (bool) {
 	return a.isSet
 }

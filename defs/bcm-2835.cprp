@@ -1,0 +1,13 @@
+<!--
+this is the collection of peripherals that are associated with a bcm 2835.  This
+set is defined by the least functionality on qemu, so we use the qemu versions here
+and let others override it if they desire.
+-->
+<peripherals>
+    <includes>
+        <include>bcm-2835-timers-qemu.prp</include> <!--use the base version -->
+        <include>bcm-2835-arm-gic.prp</include>
+        <include>bcm-2835-vidcore4.prp</include>
+        <include>bcm-2835-auxiliaries.prp</include>
+    </includes>
+</peripherals>

@@ -1,0 +1,578 @@
+<!-- Quad A7 Core Local Control -->
+<!--
+This is primarily for two things: the local timer (clock) which can generate interrupts and *local* interrupt routing.
+When an A7 quad core is used with an interrupt controller (e.g. the BCM 2836) then exactly one of the cores can
+receive interrupts from the array of peripherals on the interrupt controller.
+-->
+
+<peripheral>
+    <name>QuadA7Control</name>
+    <description>
+        This is primarily for two things: the local timer (clock) which can generate interrupts and *local* interrupt routing.
+        When an A7 quad core is used with an interrupt controller (e.g. the BCM 2836) then exactly one of the cores can
+        receive interrupts from the array of peripherals on the interrupt controller.
+    </description>
+    <addressBlock>
+        <absoluteAddress>0x4000000</absoluteAddress>
+        <baseAddress></baseAddress>
+        <size>0x100</size>
+        <usage>registers</usage>
+    </addressBlock>
+    <headerStructName>QA7</headerStructName>
+    <registers>
+        <register>
+            <name>Control</name>
+            <description></description>
+            <addressOffset>0</addressOffset>
+            <size>10</size>
+            <fields>
+                <field>
+                    <name>IncrementByTwo</name>
+                    <description> 64-bit Core timer increments by 2 if set, otherwise increments by 1.</description>
+                    <bitRange>[9:9]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>ClockSource</name>
+                    <description>Core timer runs from the APB clock if set, otherwise from the crystal clock</description>
+                    <bitRange>[8:8]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+            </fields>
+        </register>
+        <register>
+            <name>CoreTimerPrescaler</name>
+            <description>Core timer prescaler. timer_frequency = (2**31/prescaler) * input frequency,
+             and the Prescaler must be <= 2**31</description>
+            <addressOffset>0x8</addressOffset>
+            <size>32</size>
+            <access>read-write</access>
+        </register>
+        <register>
+            <name>GPUInterruptRouting</name>
+            <description></description>
+            <addressOffset>0xC</addressOffset>
+            <size>4</size>
+            <access>read-write</access>
+            <fields>
+                <field>
+                    <name>GPUFIQ</name>
+                    <description>Chooses which core receives the FIQ interrupt from the GPU.  Only one core
+                    can receive this interrupt.  Without doing this routing, typically interrupt controller
+                    interrupts will not reach a core or may reach an unexpected one.</description>
+                    <bitRange>[3:2]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                    <enumeratedValues>
+                        <enumeratedValue>
+                            <name>Core0</name>
+                            <value>0b00</value>
+                        </enumeratedValue>
+                        <enumeratedValue>
+                            <name>Core1</name>
+                            <value>0b01</value>
+                        </enumeratedValue>
+                        <enumeratedValue>
+                            <name>Core2</name>
+                            <value>0b10</value>
+                        </enumeratedValue>
+                        <enumeratedValue>
+                            <name>Core3</name>
+                            <value>0b11</value>
+                        </enumeratedValue>
+                    </enumeratedValues>
+                </field>
+            </fields>
+        </register>
+        <register>
+            <name>CoreTimerLower32</name>
+            <description>64-bit core timer read/write, Least Significant 32 bits. When reading returns the current 32
+            least significant bits of the 64 timer and triggers storing a copy of the MS 32 bits.  When writing:
+            stores a copy of the 32 bits written. That copy is transferred to the timer when the most significant
+            32 bits are written.
+            </description>
+            <addressOffset>0x1C</addressOffset>
+            <access>read-write</access>
+            <size>32</size>
+        </register>
+        <register>
+            <name>CoreTimerUpper32</name>
+            <description>64-bit core timer read/write, most siginfiacnt 32 bits. When reading returns the status of
+             the core timer-read-hold register. That register is loaded when the user does a read of the LS-32 timer
+             bits. There is little sense in reading this register without first doing a read from the LS-32 bit register.
+             When writing the value is written to the timer, as well as the value previously written to
+             the LS-32 write-holding bit register. There is little sense in writing this register without
+             first doing a write to the LS-32 bit register
+            </description>
+            <addressOffset>0x20</addressOffset>
+            <access>read-write</access>
+            <size>32</size>
+        </register>
+        <register>
+            <name>LocalTimer/name>
+            <description>The local interrupt routing register is described here, but the local timer is the only
+            local interrupt source present.
+            </description>
+            <addressOffset>0x24</addressOffset>
+            <size>3</size>
+            <access>read-write</access>
+            <fields>
+                <field>
+                    <name>RouteTo</name>
+                    <description></description>
+                    <bitRange>[2:0]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                    <enumeratedValues>
+                        <enumeratedValue>
+                            <name>Core0IRQ</name>
+                            <value>0b000</value>
+                        </enumeratedValue>
+                        <enumeratedValue>
+                            <name>Core1IRQ</name>
+                            <value>0b001</value>
+                        </enumeratedValue>
+                        <enumeratedValue>
+                            <name>Core2IRQ</name>
+                            <value>0b010</value>
+                        </enumeratedValue>
+                        <enumeratedValue>
+                            <name>Core3IRQ</name>
+                            <value>0b011</value>
+                        </enumeratedValue>
+                        <enumeratedValue>
+                            <name>Core0FIQ</name>
+                            <value>0b100</value>
+                        </enumeratedValue>
+                        <enumeratedValue>
+                            <name>Core1FIQ</name>
+                            <value>0b101</value>
+                        </enumeratedValue>
+                        <enumeratedValue>
+                            <name>Core2FIQ</name>
+                            <value>0b110</value>
+                        </enumeratedValue>
+                        <enumeratedValue>
+                            <name>Core3FIQ</name>
+                            <value>0b111</value>
+                        </enumeratedValue>
+                    </enumeratedValues>
+                </field>
+            </fields>
+        </register>
+        <register>
+            <name>LocalTimer/name>
+            <description>The QA7 has a single local timer which can generate interrupts. The local timer ALWAYS gets its timing
+            pulses from the Crystal clock. You get a 'timing pulse' every clock EDGE. Thus a 19.2 MHz crystal gives
+            38.4 M pulses/second.
+            </description>
+            <addressOffset>0x34</addressOffset>
+            <size>32</size>
+            <access>read-write</access>
+            <fields>
+                <field>
+                    <name>InterruptFlag</name>
+                    <description>The local timer counts down and re-loads when it gets to zero. At the same time an interrupt-flag is set.
+                    The user must clear the interrupt flag. There is no detection if the interrupt flag is still set when the next
+                    time the local timer re-loads.
+                    </description>
+                    <bitRange>[31:31]</bitRange>
+                    <access>read-only</access>
+                </field>
+                <field>
+                    <name>InterruptEnable</name>
+                    <description>A 1 indicates the local timer interrupt is enabled.</description>
+                    <bitRange>[29:29]</bitRange>
+                    <access>read-write</access>
+                </field>
+                <field>
+                    <name>TimerEnable</name>
+                    <description>A 1 indicates the timer is enabled.</description>
+                    <bitRange>[28:28]</bitRange>
+                    <access>read-write</access>
+                </field>
+                <field>
+                    <name>ReloadValue</name>
+                    <description>The starting point of the countdown timer.</description>
+                    <bitRange>[27:0]</bitRange>
+                    <access>read-write</access>
+                </field>
+            </fields>
+        </register>
+        <register>
+            <name>TimerWriteFlags</name>
+            <description>The IRQ clear & reload register has one extra bit: when writing bit 30 high, the local timer is immediately
+                         reloaded without generating an interrupt. As such it can also be used as a watchdog timer.
+            </description>
+            <addressOffset>0x38</addressOffset>
+            <size>32</size>
+            <access>write-only</access>
+            <fields>
+                <field>
+                    <name>ClearInterrupt</name>
+                    <description>Interrupt flag cleared when written as 1</description>
+                    <bitRange>[31:31]</bitRange>
+                    <access>write-only</access>
+                </field>
+                <field>
+                    <name>Reload</name>
+                    <description>Local timer-reloaded when written as 1 </description>
+                    <bitRange>[30:30]</bitRange>
+                    <access>write-only</access>
+                </field>
+            </fields>
+        </register>
+        <register>
+            <dim>4</dim>
+            <dimIncrement>4</dimIncrement>
+            <dimIndex>Core0,Core1,Core2,Core3</dimIndex>
+            <name>TimersInterruptControl[%s]</name>
+            <description>The registers allow you to enable or
+            disable an IRQ or FIQ interrupt. They cannot clear an pending interrupts</description>
+            <addressOffset>0x40</addressOffset>
+            <size>32</size>
+            <fields>
+                <field>
+                    <name>VirtualTimerFIQ</name>
+                    <description>nCNTVIRQ FIQ control. If set, this bit overrides the IRQ bit (3).
+                    Value Of 1 indicates FIQ enabled.</description>
+                    <bitRange>[7:7]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>HypervisorTimerFIQ</name>
+                    <description>nCNTHPIRQ FIQ control. If set, this bit overrides the IRQ bit (2).
+                    Value of 1 indicates FIQ enabled.</description>
+                    <bitRange>[6:6]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>NonSecurePhysicalTimer</name>
+                    <description>nCNTPNSIRQ FIQ control. If set, this bit overrides the IRQ bit (1).
+                    Value of 1 indicates FIQ enabled.</description>
+                    <bitRange>[5:5]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>SecurePhysicalTimer</name>
+                    <description>nCNTPSIRQ FIQ control. If set, this bit overrides the IRQ bit (0)
+                    Value of 1 indicates FIQ enabled.</description>
+                    <bitRange>[4:4]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>VirtualTimerIRQ</name>
+                    <description>nCNTVIRQ IRQ control.This bit is only valid if bit 7 is clear otherwise it is
+                    ignored.  Value of 1 indicates IRQ enabled</description>
+                    <bitRange>[3:3]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>HypervisorTimerIRQ</name>
+                    <description>nCNTHPIRQ IRQ control. This bit is only value if bit 6 is clear, otherwise it
+                    is ignored. Value of 1 indicates IRQ enabled.</description>
+                    <bitRange>[2:2]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>NonSecurePhysicalTimerIRQ</name>
+                    <description>nCNTPNSIRQ IRQ control.
+                    This bit is only valid if bit 5 is clear otherwise it is ignored. Value of 1 indicates IRQ enabled.
+                    </description>
+                    <bitRange>[1:1]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>SecurePhysicalTimerIRQ</name>
+                    <description>nCNTPSIRQ IRQ control. This bit is only valid if bit 4 is clear otherwise it is
+                    ignored. Value of 1 indicates IRQ enabled</description>
+                    <bitRange>[0:0]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+            </fields>
+        </register>
+        <register>
+            <dim>4</dim>
+            <dimIncrement>4</dimIncrement>
+            <dimIndex>Core0,Core1,Core2,Core3</dimIndex>
+            <name>MailboxInterruptControl[%s]</name>
+            <description></description>
+            <addressOffset>0x50</addressOffset>
+            <size>32</size>
+        </register>
+        <register>
+            <dim>4</dim>
+            <dimIncrement>4</dimIncrement>
+            <dimIndex>Core0,Core1,Core2,Core3</dimIndex>
+            <name>IRQSource[%s]</name>
+            <description></description>
+            <addressOffset>0x60</addressOffset>
+            <size>12</size>
+            <fields>
+                <field>
+                    <name>LocalTimerInterrupt</name>
+                    <description></description>
+                    <bitRange>[11:11]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>AXIOutstandingInterrupt</name>
+                    <description>For core 0 only! All others are 0.</description>
+                    <bitRange>[10:10]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>PMUInterrupt</name>
+                    <description></description>
+                    <bitRange>[9:9]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>GPUInterrupt</name>
+                    <description>Can be connected to only one core.</description>
+                    <bitRange>[8:8]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>Mailbox3Interrupt</name>
+                    <description></description>
+                    <bitRange>[7:7]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>Mailbox2Interrupt</name>
+                    <description></description>
+                    <bitRange>[6:6]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>Mailbox1Interrupt</name>
+                    <description></description>
+                    <bitRange>[5:5]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>Mailbox0Interrupt</name>
+                    <description></description>
+                    <bitRange>[4:4]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>VirtualCounter</name>
+                    <description></description>
+                    <bitRange>[3:3]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>HypervisorCounter</name>
+                    <description></description>
+                    <bitRange>[2:2]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>NonsecureTimer</name>
+                    <description></description>
+                    <bitRange>[1:1]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>SecureTimer</name>
+                    <description></description>
+                    <bitRange>[0:0]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+            </fields>
+        </register>
+        <register>
+            <dim>4</dim>
+            <dimIncrement>4</dimIncrement>
+            <dimIndex>Core0,Core1,Core2,Core3</dimIndex>
+            <name>FIQSource[%s]</name>
+            <description></description>
+            <addressOffset>0x70</addressOffset>
+            <size>12</size>
+            <fields>
+                <field>
+                    <name>LocalTimerFastInterrupt</name>
+                    <description></description>
+                    <bitRange>[11:11]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>PMUFastInterrupt</name>
+                    <description></description>
+                    <bitRange>[9:9]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>GPUFastInterrupt</name>
+                    <description>Can be connected to only one core.</description>
+                    <bitRange>[8:8]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>Mailbox3FastInterrupt</name>
+                    <description></description>
+                    <bitRange>[7:7]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>Mailbox2FastInterrupt</name>
+                    <description></description>
+                    <bitRange>[6:6]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>Mailbox1FastInterrupt</name>
+                    <description></description>
+                    <bitRange>[5:5]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>Mailbox0FastInterrupt</name>
+                    <description></description>
+                    <bitRange>[4:4]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>VirtualCounterFastInterrupt</name>
+                    <description></description>
+                    <bitRange>[3:3]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>HypervisorCounterFastInterrupt</name>
+                    <description></description>
+                    <bitRange>[2:2]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>NonsecureTimerFastInterrupt</name>
+                    <description></description>
+                    <bitRange>[1:1]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>SecureTimerFastInterrupt</name>
+                    <description></description>
+                    <bitRange>[0:0]</bitRange>
+                    <access>read-write</access>
+                    <resetValue>0</resetValue>
+                </field>
+            </fields>
+        </register>
+        <register>
+            <dim>4</dim>
+            <dimIncrement>4</dimIncrement>
+            <dimIndex>Mailbox0,Mailbox1,Mailbox2,Mailbox3</dimIndex>
+            <name>Core0WriteSet[%s]</name>
+            <description></description>
+            <addressOffset>0x80</addressOffset>
+            <size>32</size>
+            <access>write-only</access>
+        </register>
+        <register>
+            <dim>4</dim>
+            <dimIncrement>4</dimIncrement>
+            <dimIndex>Mailbox0,Mailbox1,Mailbox2,Mailbox3</dimIndex>
+            <name>Core1WriteSet[%s]</name>
+            <description></description>
+            <addressOffset>0x90</addressOffset>
+            <size>32</size>
+            <access>write-only</access>
+        </register>
+        <register>
+            <dim>4</dim>
+            <dimIncrement>4</dimIncrement>
+            <dimIndex>Mailbox0,Mailbox1,Mailbox2,Mailbox3</dimIndex>
+            <name>Core2WriteSet[%s]</name>
+            <description></description>
+            <addressOffset>0xA0</addressOffset>
+            <size>32</size>
+            <access>write-only</access>
+        </register>
+        <register>
+            <dim>4</dim>
+            <dimIncrement>4</dimIncrement>
+            <dimIndex>Mailbox0,Mailbox1,Mailbox2,Mailbox3</dimIndex>
+            <name>Core3WriteSet[%s]</name>
+            <description></description>
+            <addressOffset>0xB0</addressOffset>
+            <size>32</size>
+            <access>write-only</access>
+        </register>
+        <register>
+            <dim>4</dim>
+            <dimIncrement>4</dimIncrement>
+            <dimIndex>Mailbox0,Mailbox1,Mailbox2,Mailbox3</dimIndex>
+            <name>Core0WriteClear[%s]</name>
+            <description></description>
+            <addressOffset>0xC0</addressOffset>
+            <size>32</size>
+            <access>write-only</access>
+        </register>
+        <register>
+            <dim>4</dim>
+            <dimIncrement>4</dimIncrement>
+            <dimIndex>Mailbox0,Mailbox1,Mailbox2,Mailbox3</dimIndex>
+            <name>Core1WriteClear[%s]</name>
+            <description></description>
+            <addressOffset>0xD0</addressOffset>
+            <size>32</size>
+            <access>write-only</access>
+        </register>
+        <register>
+            <dim>4</dim>
+            <dimIncrement>4</dimIncrement>
+            <dimIndex>Mailbox0,Mailbox1,Mailbox2,Mailbox3</dimIndex>
+            <name>Core2WriteClear[%s]</name>
+            <description></description>
+            <addressOffset>0xE0</addressOffset>
+            <size>32</size>
+            <access>write-only</access>
+        </register>
+        <register>
+            <dim>4</dim>
+            <dimIncrement>4</dimIncrement>
+            <dimIndex>Mailbox0,Mailbox1,Mailbox2,Mailbox3</dimIndex>
+            <name>Core3WriteClear[%s]</name>
+            <description></description>
+            <addressOffset>0xF0</addressOffset>
+            <size>32</size>
+            <access>write-only</access>
+        </register>
+    </registers>
+</peripheral>
+

@@ -1,0 +1,69 @@
+<!--
+this file should really include all the mailbox calls in some machine-readable form so we can generate the vidcore4 api
+todo(iansmith)
+-->
+<peripheral>
+    <name>Mailbox</name>
+    <description>
+    Videocore mailbox interface. inputs must be 16 byte aligned!
+    </description>
+    <addressBlock>
+        <baseAddress>0x0000B880</baseAddress>
+        <size>0x24</size>
+        <usage>registers</usage>
+    </addressBlock>
+    <registers>
+        <register>
+            <name>Read</name>
+            <description></description>
+            <addressOffset>0x0</addressOffset>
+            <size>32</size>
+        </register>
+        <register>
+            <name>Poll</name>
+            <description></description>
+            <addressOffset>0x10</addressOffset>
+            <size>32</size>
+        </register>
+        <register>
+            <name>Sender</name>
+            <description></description>
+            <addressOffset>0x14</addressOffset>
+            <size>32</size>
+        </register>
+        <register>
+            <name>Status</name>
+            <description></description>
+            <addressOffset>0x18</addressOffset>
+            <size>32</size>
+            <fields>
+                <field>
+                    <name>Full</name>
+                    <description>Is the mailbox already full?</description>
+                    <access>read-only</access>
+                    <bitRange>[31:31]</bitRange>
+                    <resetValue>0</resetValue>
+                </field>
+                <field>
+                    <name>Empty</name>
+                    <description>Is the mailbox empty?</description>
+                    <access>read-only</access>
+                    <bitRange>[30:30]</bitRange>
+                    <resetValue>1</resetValue>
+                </field>
+            </fields>
+        </register>
+        <register>
+            <name>Config</name>
+            <description></description>
+            <addressOffset>0x1C</addressOffset>
+            <size>32</size>
+        </register>
+        <register>
+            <name>Write</name>
+            <description></description>
+            <addressOffset>0x20</addressOffset>
+            <size>32</size>
+        </register>
+    </registers>
+</peripheral>

@@ -1,0 +1,114 @@
+<!--
+this is the broadcom implementation of an interrupt controller that is compatible
+with the ARM GIC (general interrupt controller) definition.
+-->
+<peripheral>
+    <name>InterruptController</name>
+    <description>
+    ARM Interrupt controller.
+    </description>
+    <addressBlock>
+        <baseAddress>0xB200</baseAddress>
+        <size>0x28</size>
+        <usage>registers</usage>
+    </addressBlock>
+    <headerStructName></headerStructName>
+    <registers>
+        <register>
+            <name>BasicPending</name>
+            <addressOffset>0x00</addressOffset>
+            <description>Basic Interrupt Pending</description>
+            <size>32</size>
+            <fields>
+                <field>
+                    <name>ARMTimer</name>
+                    <bitRange>[0:0]</bitRange>
+                </field>
+            </fields>
+        </register>
+        <register>
+            <name>Pending1</name>
+            <addressOffset>0x04</addressOffset>
+            <description>Interrupt Group 1 Pending</description>
+            <size>32</size>
+        </register>
+        <register>
+            <name>Pending2</name>
+            <addressOffset>0x08</addressOffset>
+            <description>Interrupt Group 2 Pending</description>
+            <size>32</size>
+        </register>
+        <register>
+            <name>FIQControl</name>
+            <addressOffset>0x0C</addressOffset>
+            <description>Controls "fast" interrupts</description>
+            <size>32</size>
+        </register>
+        <register>
+            <name>EnableIRQs1</name>
+            <addressOffset>0x10</addressOffset>
+            <description>Enable Group 1 Interrupts</description>
+            <size>32</size>
+            <fields>
+                <field>
+                    <name>AuxInterrupt</name>
+                    <description>Auxillary Peripherals Interrupt</description>
+                    <access>read-write</access>
+                    <bitRange>[29:29]</bitRange>
+                    <resetValue>0b0</resetValue>
+                </field>
+            </fields>
+        </register>
+        <register>
+            <name>EnableIRQs2</name>
+            <addressOffset>0x14</addressOffset>
+            <description>Enable Group 2 Interrupts</description>
+            <size>32</size>
+        </register>
+        <register>
+            <name>EnableBasic</name>
+            <addressOffset>0x18</addressOffset>
+            <description>Enable Basic Interrupts</description>
+            <size>32</size>
+            <fields>
+                <field>
+                    <name>ARMTimer</name>
+                    <bitRange>[0:0]</bitRange>
+                </field>
+            </fields>
+        </register>
+        <register>
+            <name>DisableIRQs1 </name>
+            <addressOffset>0x1C</addressOffset>
+            <description>Disable Group 1 Interrupts</description>
+            <size>32</size>
+            <fields>
+                <field>
+                    <name>AuxInterrupt</name>
+                    <description>Auxillary Peripherals Interrupt</description>
+                    <access>read-write</access>
+                    <bitRange>[29:29]</bitRange>
+                    <resetValue>0b0</resetValue>
+                </field>
+            </fields>
+        </register>
+        <register>
+            <name>DisableIRQs2</name>
+            <addressOffset>0x20</addressOffset>
+            <description>Disable Group 2 Interrupts</description>
+            <size>32</size>
+        </register>
+        <register>
+            <name>DisableBasic</name>
+            <addressOffset>0x24</addressOffset>
+            <description>Disable Basic Interrupts</description>
+            <size>32</size>
+            <fields>
+                <field>
+                    <name>ARMTimer</name>
+                    <bitRange>[0:0]</bitRange>
+                </field>
+            </fields>
+        </register>
+    </registers>
+</peripheral>

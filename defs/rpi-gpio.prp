@@ -1,0 +1,125 @@
+<!--
+This documents the physical 54 pin interface on the RPI3.
+It would probably work with older PIs since the GPIO interface is pretty stable.
+
+How do we uplevel this to have functions in it like SetFunction(pin,altFunc5)? todo(iansmith)
+Those functions only make sense when you have this exact GPIO descriptor.
+-->
+<peripheral>
+    <name>GeneralPurposeIO</name>
+    <description>
+    54 Pin Block Of GPIO
+    </description>
+    <addressBlock>
+        <baseAddress>0x00200000</baseAddress>
+        <size>0xA0</size>
+        <usage>registers</usage>
+    </addressBlock>
+    <headerStructName>GPIO</headerStructName>
+    <registers>
+        <register>
+            <dim>6</dim>
+            <dimIncrement>4</dimIncrement>
+            <!--yes, these are in a weird order; we allow dimIndex to be used with arrays for generating index constants -->
+            <dimIndex>GPIOInput,GPIOOutput,GPIOAltFunc5,GPIOAltFunc4,GPIOAltFunc0,GPIOAltFunc1,GPIOAltFunc2,GPIOAltFunc3</dimIndex>
+            <name>FunctionSelect[%s]</name>
+            <description>The control the use of the various pins. See also GPIOSetup function.</description>
+            <addressOffset>0</addressOffset>
+            <size>32</size>
+        </register>
+        <register>
+            <dim>2</dim>
+            <dimIncrement>4</dimIncrement>
+            <name>OutputSet[%s]</name>
+            <addressOffset>0x1C</addressOffset>
+            <description>Set a pin to high (1)</description>
+            <size>32</size>
+        </register>
+        <register>
+            <dim>2</dim>
+            <dimIncrement>4</dimIncrement>
+            <name>OutputClear[%s]</name>
+            <addressOffset>0x28</addressOffset>
+            <description>Set a pin to low (0)</description>
+            <size>32</size>
+        </register>
+        <register>
+            <dim>2</dim>
+            <dimIncrement>4</dimIncrement>
+            <name>Level[%s]</name>
+            <addressOffset>0x34</addressOffset>
+            <description></description>
+            <size>32</size>
+        </register>
+        <register>
+            <dim>2</dim>
+            <dimIncrement>4</dimIncrement>
+            <name>EventDectectStatus[%s]</name>
+            <addressOffset>0x40</addressOffset>
+            <description></description>
+            <size>32</size>
+        </register>
+        <register>
+            <dim>2</dim>
+            <dimIncrement>4</dimIncrement>
+            <name>RisingEdgeDetectEnable[%s]</name>
+            <addressOffset>0x4C</addressOffset>
+            <description></description>
+            <size>32</size>
+        </register>
+        <register>
+            <dim>2</dim>
+            <dimIncrement>4</dimIncrement>
+            <name>FallingEdgeDetectEnable[%s]</name>
+            <addressOffset>0x58</addressOffset>
+            <description></description>
+            <size>32</size>
+        </register>
+        <register>
+            <dim>2</dim>
+            <dimIncrement>4</dimIncrement>
+            <name>HighDetectEnable[%s]</name>
+            <addressOffset>0x64</addressOffset>
+            <description></description>
+            <size>32</size>
+        </register>
+        <register>
+            <dim>2</dim>
+            <dimIncrement>4</dimIncrement>
+            <name>LowDetectEnable[%s]</name>
+            <addressOffset>0x70</addressOffset>
+            <description></description>
+            <size>32</size>
+        </register>
+        <register>
+            <dim>2</dim>
+            <dimIncrement>4</dimIncrement>
+            <name>AsyncRisingEdgeDetect[%s]</name>
+            <addressOffset>0x7C</addressOffset>
+            <description></description>
+            <size>32</size>
+        </register>
+        <register>
+            <dim>2</dim>
+            <dimIncrement>4</dimIncrement>
+            <name>AsyncFallingEdgeDetect[%s]</name>
+            <addressOffset>0x88</addressOffset>
+            <description></description>
+            <size>32</size>
+        </register>
+        <register>
+            <name>PullUpDownEnable</name>
+            <addressOffset>0x94</addressOffset>
+            <description></description>
+            <size>32</size>
+        </register>
+        <register>
+            <dim>2</dim>
+            <dimIncrement>4</dimIncrement>
+            <name>PullUpDownEnableClock[%s]</name>
+            <addressOffset>0x98</addressOffset>
+            <description></description>
+            <size>32</size>
+        </register>
+    </registers>
+</peripheral>

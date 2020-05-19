@@ -3,7 +3,7 @@ package svd
 import (
 	"encoding/xml"
 	"fmt"
-	"html/template"
+	"text/template"
 	"io"
 	"log"
 	"strings"
@@ -36,13 +36,34 @@ type constantDef struct {
 }
 var constants = []*constantDef{}
 
-func ProcessSVD(reader io.Reader, opts *UserOptions) {
+type templateGroup struct {
+	device *template.Template
+	bitField *template.Template
+	preamble *template.Template
+	constant *template.Template
+}
+
+//Computes a composite that contains exactly the contents of this single file.
+// We split the peripherals out as if they came from separate files.
+func ProcessSVD(reader io.Reader, opts *UserOptions, sourceFilename string) *CompositeSVD {
 	var device DeviceDef
-	decoder:=xml.NewDecoder(reader)
-	if err:=decoder.Decode(&device); err!=nil {
-		log.Fatalf("decoding error: %v",err)
+	decoder := xml.NewDecoder(reader)
+	if err := decoder.Decode(&device); err != nil {
+		log.Fatalf("decoding error: %v", err)
 	}
-	if opts.Dump {
+	if opts.Dump{
+		dump(&device)
+	}
+	result := &CompositeSVD{}
+	for _, p:=range device.Peripheral {
+		result.Perpipheral=append(result.Perpipheral, p)
+	}
+	device.Peripheral=nil
+	result.Device=&device
+
+	return result
+}
+func dump(device *DeviceDef) {
 		for _, peripheral:=range device.Peripheral {
 			groupName:=""
 			if peripheral.GroupName!="" {
@@ -77,27 +98,38 @@ func ProcessSVD(reader io.Reader, opts *UserOptions) {
 		}
 	}
 
+
+func createOutputTemplates() *templateGroup {
+
 	//
 	// Create templates
 	//
-	deviceTemplate:=template.New("device")
+	deviceTemplate := template.New("device")
 	deviceTemplate = template.Must(deviceTemplate.Parse(deviceTemplateText))
 
-	bitFieldDeclTemplate:=template.New("bitFieldDecl")
+	bitFieldDeclTemplate := template.New("bitFieldDecl")
 	bitFieldDeclTemplate = template.Must(bitFieldDeclTemplate.Parse(bitFieldDeclTemplateText))
 
-	preambleTemplate:=template.New("preamble")
+	preambleTemplate := template.New("preamble")
 	preambleTemplate = template.Must(preambleTemplate.Parse(preambleTemplateText))
 
-	constantTemplate:=template.New("constant")
+	constantTemplate := template.New("constant")
 	constantTemplate = template.Must(constantTemplate.Parse(constantTemplateText))
 
+	return &templateGroup{device: deviceTemplate,
+		bitField: bitFieldDeclTemplate,
+		preamble: preambleTemplate,
+		constant: constantTemplate,
+	}
+}
+
+func outputDevice(device *DeviceDef, opts *UserOptions, tg *templateGroup) {
 	//
 	// Process what we got in the SVD
 	//
-	addReservedRegisters(&device)
-	makeObjectsExported(&device)
-	makeBitfieldDecl(&device)
+	addReservedRegisters(device)
+	makeObjectsExported(device)
+	makeBitfieldDecl(device)
 
 	//
 	//assign things we got from user
@@ -108,11 +140,13 @@ func ProcessSVD(reader io.Reader, opts *UserOptions) {
 	device.Import = opts.Import
 
 	////////// EXECUTE TEMPLATES //////////////
-	if err:=preambleTemplate.Execute(opts.Out,device); err!=nil {
+	if err:=tg.preamble.Execute(opts.Out,device); err!=nil {
 		log.Fatal(err)
 	}
 
 	for _, p := range device.Peripheral {
+		p.SourceFilename=opts.InputFilename //got this from user, slap it on any peripheral we find
+
 		if !p.AddressBlock.Size.IsSet() {
 			log.Fatalf("peripheral %s's address block has no size", p.Name)
 		}
@@ -124,17 +158,17 @@ func ProcessSVD(reader io.Reader, opts *UserOptions) {
 				log.Fatalf("peripheral %s, register %s has no size", p.Name,r.Name)
 			}
 			for _, f := range r.Field {
-				if err:=bitFieldDeclTemplate.Execute(opts.Out,f); err!=nil {
+				if err:=tg.bitField.Execute(opts.Out,f); err!=nil {
 					log.Fatal(err)
 				}
 
 			}
 		}
 	}
-	if err:=deviceTemplate.Execute(opts.Out,device); err!=nil {
+	if err:=tg.device.Execute(opts.Out,device); err!=nil {
 		log.Fatal(err)
 	}
-	if err:=constantTemplate.Execute(opts.Out,constants); err!=nil {
+	if err:=tg.constant.Execute(opts.Out,constants); err!=nil {
 		log.Fatal(err)
 	}
 }
@@ -208,7 +242,7 @@ func makeObjectsExported(d *DeviceDef) {
 			log.Fatalf("names in an SVD document must be valid identifiers in go:  peripheral typeName '%s'",
 				peripheral.TypeName)
 		}
-		peripheral.TypeName = makeExported(peripheral.Name)+"Def"
+		peripheral.TypeName = makeExported(peripheral.Name)
 		if peripheral.HeaderStructName!="" {
 			peripheral.TypeName = makeExported(peripheral.HeaderStructName)
 		}
@@ -245,12 +279,14 @@ func makeObjectsExported(d *DeviceDef) {
 							r.Name,peripheral.Name)
 					}
 					r.Name = strings.TrimSuffix(r.Name,arrayDesignator)
-					for n, v:= range strings.Split(r.DimIndex,",") {
-						c:=&constantDef{
-							Name:r.Name+strings.TrimSpace(v),
-							Value: fmt.Sprint(n),
+					if strings.TrimSpace(r.DimIndex)!="" {
+						for n, v:= range strings.Split(r.DimIndex,",") {
+							c:=&constantDef{
+								Name:r.Name+strings.TrimSpace(v),
+								Value: fmt.Sprint(n),
+							}
+							constants=append(constants,c)
 						}
-						constants=append(constants,c)
 					}
 				}
 			}
@@ -281,8 +317,8 @@ func makeObjectsExported(d *DeviceDef) {
 // exported out of the package.
 func addReservedRegisters(d *DeviceDef) {
 	//add in
-	reservedCount:=0
 	for _, peripheral := range d.Peripheral {
+		reservedCount:=0
 		current:=0x0
 		regsOutput:=[]*RegisterDef{}
 		for _, register:= range peripheral.Register {
@@ -310,9 +346,13 @@ func addReservedRegisters(d *DeviceDef) {
 			}
 			//we reached the next register
 			regsOutput = append(regsOutput, register)
-			current+=4 //only 32 bit regs
+			if register.Dim.IsSet() {
+				current+=int(register.Dim.Get()*register.DimIncrement.Get()) //better be increment of 4
+			} else {
+				current+=4 //only 32 bit regs
+			}
 		}
-		n:=len(regsOutput)<<2 //4 bytes each
+		n:=current
 		//fill ones _after_ last declared register
 		for i:=int64(n); i<peripheral.AddressBlock.Size.Get(); i+=4{
 			reserved := RegisterDef{
